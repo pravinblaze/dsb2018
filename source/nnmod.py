@@ -7,7 +7,7 @@ import torch.nn.functional as F
 import torch.optim as optimize
 from torchvision import transforms
 from torch.autograd import Variable
-from datamod01 import backboneDatasetLoader
+from datamod import backboneDatasetLoader
 from constants import DATA
 from constants import AnchorShapes
 
@@ -190,90 +190,6 @@ def xavier_init(m):
     if isinstance(m, nn.Conv2d):
         nn.init.xavier_uniform(m.weight.data)
         nn.init.constant(m.bias.data, 0)
-
-
-def trainBackbone(net, batch_size=100,
-                  epochs=3,
-                  a=0.0001, b=0.1,
-                  save_model=False,
-                  data_transform=transforms.Compose([
-                        transforms.Resize((32, 32)),
-                        transforms.Grayscale(),
-                        transforms.ToTensor()])):
-
-    net.apply(xavier_init)  # Applying xavier normal initialization on convolution layer parameters
-    net.cuda()
-
-    trainloader, validloader = backboneDatasetLoader(batch_size=batch_size, data_transform=data_transform)
-    criterion = nn.CrossEntropyLoss()
-
-    validiter = iter(validloader)
-    validdata = validiter.next()
-    validinputs, validlabels = validdata
-    validinputs = Variable(validinputs).cuda()
-    validlabels = Variable(validlabels)
-
-    for epoch in range(epochs):  # loop over the dataset multiple times
-        optimizer = optimize.Adam(net.parameters(), lr=a * (b ** (epoch//2)))
-        for i, data in enumerate(trainloader, 0):
-
-            # get the inputs
-            inputs, labels = data
-
-            # wrap them in Variable
-            inputs, labels = Variable(inputs).cuda(), Variable(labels)
-
-            # zero the parameter gradients
-            optimizer.zero_grad()
-
-            # forward + backward + optimize
-            outputs = net(inputs)
-            loss = criterion(outputs.cpu(), labels)
-            loss.backward()
-            optimizer.step()
-
-            # validataion loss
-            validoutputs = net(validinputs)
-            validloss = criterion(validoutputs.cpu(), validlabels)
-
-            # print statistics
-            if i % (1+1000//batch_size) == 0:
-                print('Epoch %d, batch %5d, training loss: %.5f, validation loss: %.5f'
-                      % (epoch + 1, i + 1, loss.data[0], validloss.data[0]))
-
-    print('Training finished successfully !')
-    if save_model:
-        print('Saving model to disk ... ')
-        torch.save(net.state_dict(), DATA+'models/'+net.__class__.__name__+'.torch')
-        print('Model saved to disk !')
-
-    pass
-
-
-def validateBackboneNet(net, data_transform=transforms.Compose([
-                        transforms.Resize((32, 32)),
-                        transforms.Grayscale(),
-                        transforms.ToTensor()])):
-
-    net.cuda()
-    _, dataloader = backboneDatasetLoader(batch_size=2000, data_transform=data_transform)
-
-    net.load_state_dict(torch.load(DATA+'models/'+net.__class__.__name__+'.torch'))
-    criterion = nn.CrossEntropyLoss()
-
-    dataiter = iter(dataloader)
-    data = dataiter.next()
-
-    inputs, labels = data
-    inputs, labels = Variable(inputs), Variable(labels)
-    outputs = net(inputs.cuda())
-    loss = criterion(outputs.cpu(), labels)
-
-    # print statistics
-
-    print('Loss over validation set : %.5f' % (loss,))
-
-    pass
 
 
 class singleFilterConv(nn.Module):

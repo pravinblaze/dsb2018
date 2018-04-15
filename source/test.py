@@ -1,7 +1,7 @@
 ''' Testing visualizerpn '''
 
-# from rpn import visualizeRPN
-# visualizeRPN()
+from testcode import visualizeRPN
+visualizeRPN()
 
 ''' Testing validateRPN '''
 
@@ -10,13 +10,13 @@
 
 ''' Testing trainRPN '''
 
-from rpn import trainRPN
-
-trainRPN(epochs=4, a=0.001, b=0.1,
-         train_backbone=True,
-         init_backbone=False,
-         init_rpn=False,
-         save_model=True)
+# from rpn import trainRPN
+#
+# trainRPN(epochs=4, a=0.001, b=0.1,
+#          train_backbone=True,
+#          init_backbone=False,
+#          init_rpn=False,
+#          save_model=True)
 
 ''' Testing generateAnchors '''
 

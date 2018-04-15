@@ -55,7 +55,7 @@ def prepareRPNdataset():
                 else:
                     # print("Debugging: no contour found ...")
                     pass
-                m = 0.3  # margin
+                m = 0.1  # margin
                 x1 = max(0, round(x - w * m))
                 y1 = max(0, round(y - h * m))
                 x2 = min(shape[1], round(x + w * (1 + m)) + 1)
@@ -189,23 +189,6 @@ class loadCropBatches():
             raise StopIteration
 
 
-def analyzeOriginalCrops():
-
-    load = loadCropBatches()
-    shapes = pd.DataFrame(columns=['rows', 'columns'])
-
-    loop_counter = 0
-    for data in load:
-        for crop in data:
-            loop_counter += 1
-            rows, columns, _ = np.shape(crop)
-            shapes = shapes.append(pd.DataFrame([[rows, columns]], columns=['rows', 'columns']))
-        print("Reading original crops ... {} % ...".format((loop_counter*100)//29461))
-
-    pickleData(DATA + 'pickle/analysis/originalCropsStats.p', shapes)
-    return shapes
-
-
 def createMainDataBatches(data_set='train'):
     ''' Creates batches of unaltered data and pickles them with the following structure
         {id :{'image':numpyArray, 'shape':tupple, 'masks':numpyArray}, ...}
@@ -285,31 +268,6 @@ class loadMainBatches():
             return loadPickle(data_path)
         else:
             raise StopIteration
-
-
-def analyzeImageAndMaks():
-
-    load = loadMainBatches("train")
-    image_shapes = pd.DataFrame(columns=['rows', 'columns'])
-    mask_sizes = pd.DataFrame(['area'])
-
-    loop_counter = 0
-    for data in load:
-
-        for id in list(data.keys()):
-            loop_counter += 1
-            rows, columns, _ = data[id]['shape']
-            image_shapes = image_shapes.append(pd.DataFrame([[rows, columns]], columns=['rows', 'columns']))
-
-            for mask in data[id]['masks']:
-                area = np.sum(mask)
-                mask_sizes = mask_sizes.append(pd.DataFrame([[area]], columns=['area']))
-
-                pass
-        print("Reading original crops ... {} % ...".format((loop_counter * 100) // 670))
-
-    pickleData(DATA+'pickle/analysis/OriginaImagAndMaskStats.p', (image_shapes, mask_sizes))
-    return image_shapes, mask_sizes
 
 
 def linearFilter(k, direction=0):
@@ -410,32 +368,7 @@ def loadDataN1(data_set='train'):
     return data
 
 
-def visualizeDataN1(data):
-
-    num_examples = np.shape(data['images'])[0]
-
-    example_image_id = np.random.choice(num_examples, 1)[0]
-
-    print("number of training images loaded : ", num_examples)
-    print("image id : ", data['id'][example_image_id])
-    print("original shape of data : ", data['original_shape'][example_image_id])
-
-    fig = plt.figure()
-
-    fig.add_subplot(1,3,1)
-    disp1 = plt.imshow(data['images'][example_image_id])
-
-    fig.add_subplot(1,3,2)
-    disp2 = plt.imshow(data['masks'][example_image_id])
-
-    fig.add_subplot(1,3,3)
-    disp3 = plt.imshow(data['centroids'][example_image_id])
-
-    plt.show()
-
 # Serialization and de-serialization code
-
-
 def pickleData(fileName, obj):
     with open(fileName, 'wb') as pickleOut:
         pickle.dump(obj, pickleOut)
