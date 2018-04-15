@@ -1,7 +1,7 @@
 ''' Testing visualizerpn '''
 
-from rpn import visualizeRPN
-visualizeRPN()
+# from rpn import visualizeRPN
+# visualizeRPN()
 
 ''' Testing validateRPN '''
 
@@ -10,13 +10,13 @@ visualizeRPN()
 
 ''' Testing trainRPN '''
 
-# from rpn import trainRPN
+from rpn import trainRPN
 
-# trainRPN(epochs=4, a=0.001, b=0.1,
-#          train_backbone=True, 
-#          init_backbone=False,
-#          init_rpn=False,
-#          save_model=True)
+trainRPN(epochs=4, a=0.001, b=0.1,
+         train_backbone=True,
+         init_backbone=False,
+         init_rpn=False,
+         save_model=True)
 
 ''' Testing generateAnchors '''
 
@@ -50,21 +50,26 @@ visualizeRPN()
 ''' Testing rpnDataset '''
 
 # import torch
-# from src.constants import DATA
-# from src.datamod01 import rpnDataset
+# from constants import DATA
+# from datamod01 import rpnDataset
+# import numpy as np
+# import matplotlib.pyplot as plot
+# from rpn import drawRectP
 #
 # dataset = rpnDataset(DATA+'dataset/rpn/')
 #
 # data = dataset.__getitem__(0)
 # print('Size of data set :', len(dataset))
-# print(data)
 #
-# # dataloader = torch.utils.data.DataLoader(dataset, batch_size=1,
-# #                                          shuffle=True)
-# #
-# # for data in dataloader:
-# #     print(data)
-# #     break
+# dataloader = torch.utils.data.DataLoader(dataset, batch_size=1,
+#                                          shuffle=True)
+#
+# for data in dataloader:
+#     image = data['image'][0, 0, :, :]
+#     gtbbox = data['bbox'][0]
+#     drawRectP(gtbbox, image.numpy())
+#     1+1
+#     pass
 #
 # 1+1
 # pass
@@ -72,7 +77,7 @@ visualizeRPN()
 
 ''' Testing prepareRPNdataset '''
 
-# from src.datamod01 import prepareRPNdataset
+# from datamod01 import prepareRPNdataset
 #
 # prepareRPNdataset()
 

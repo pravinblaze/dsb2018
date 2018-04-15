@@ -56,16 +56,16 @@ def prepareRPNdataset():
                     # print("Debugging: no contour found ...")
                     pass
                 m = 0.3  # margin
-                x = max(0, round(x - w * m))
-                y = max(0, round(y - h * m))
+                x1 = max(0, round(x - w * m))
+                y1 = max(0, round(y - h * m))
                 x2 = min(shape[1], round(x + w * (1 + m)) + 1)
                 y2 = min(shape[0], round(y + h * (1 + m)) + 1)
 
-                maskcrop = mask_uint8[y:y2, x:x2]
+                maskcrop = mask_uint8[y1:y2, x1:x2]
                 maskcrop = cv2.resize(maskcrop, (32, 32))
                 mask_array = np.append(mask_array, np.expand_dims(maskcrop, axis=0), axis=0)
 
-                bbox = np.array([x, y, x2, y2])
+                bbox = np.array([x1, y1, x2, y2])
                 bbox_array = np.append(bbox_array, np.expand_dims(bbox, axis=0), axis=0)
 
             datadict = {"id": imgid, "image": img, "bbox": bbox_array, "masks": mask_array}
@@ -151,12 +151,12 @@ def createCropBatches():
                     # print("Debugging: no contour found ...")
                     pass
                 m = 0.3  # margin
-                x = max(0, round(x-w*m))
-                y = max(0, round(y-h*m))
+                x1 = max(0, round(x-w*m))
+                y1 = max(0, round(y-h*m))
                 x2 = min(shape[1], round(x+w*(1+m))+1)
                 y2 = min(shape[0], round(y+h*(1+m))+1)
 
-                crop = img[y:y2, x:x2]
+                crop = img[y1:y2, x1:x2]
                 crop_list.append(crop)
 
                 loop_counter += 1

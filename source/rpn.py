@@ -9,51 +9,93 @@ from nnmod01 import rpn
 from datamod01 import rpnDataset
 from generate_targets import generateTargets
 from generate_targets import center_size
+from generate_targets import point_form
+from generate_targets import nms
 import matplotlib.pyplot as plot
 import cv2
 
 
 def visualizeRPN():
+
     net = rpn().cuda()
     net.load_state_dict(torch.load(DATA + 'models/rpn.torch'))
+
     dataset = rpnDataset(DATA + 'dataset/rpn-validation-set/')
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=True)
-    dataiter = iter(dataloader)
-    data = dataiter.next()
-    image = torch.cuda.FloatTensor(np.array(data['image']))
-    gtbbox = data['bbox'].type(torch.cuda.FloatTensor)
-    classification, bboxdelta = net(Variable(image))
-    clstargets, bboxtargets, anchors = generateTargets(gtbbox[0], image.size()[-2:], classification.size()[-2:])
-    posidx = list(range(0, 2 * len(AnchorShapes) - 1, 2))
-    clspos = clstargets[0][posidx]
-    targetpos = clspos[clspos > 0].contiguous().view(-1)
-    k = len(AnchorShapes)
-    cxidx = list(range(0, 4*k, 4))
-    cyidx = list(range(1, 4*k, 4))
-    widx = list(range(2, 4*k, 4))
-    hidx = list(range(3, 4*k, 4))
-    bboxdelta = torch.cat((bboxdelta[0][cxidx].contiguous().view(-1, 1), 
-                                bboxdelta[0][cyidx].contiguous().view(-1, 1), 
-                                bboxdelta[0][widx].contiguous().view(-1, 1),
-                                bboxdelta[0][hidx].contiguous().view(-1, 1)), dim=1)
-    postargetidx = (targetpos > 0.8).nonzero()[:, 0].cpu()
-    bboxdeltacpu = bboxdelta.data.cpu()
-    anchors = anchors.cpu()
-    bboxarray = bboxdeltacpu[postargetidx]+anchors[postargetidx]
-    bboxarray = bboxarray.numpy()
-    img = np.array(data['image'])
-    img = img[0, 0, :, :]
 
-    for bbox in bboxarray:
-        cv2.rectangle(img, (int(round(bbox[0]-bbox[2]/2)), int(round(bbox[1]-bbox[3]/2))), 
-                        (int(round(bbox[0]+bbox[2]/2)), int(round(bbox[1]+bbox[3]/2))), 
-                        (0,255,0) , 2)
-        pass
-    
-    plot.imshow(img)
-    plot.show()
+    for data in dataloader:
+        image = torch.cuda.FloatTensor(np.array(data['image']))
+        gtbbox = data['bbox'].type(torch.cuda.FloatTensor)
+
+        classification, bboxdelta = net(Variable(image))
+        clstargets, bboxtargets, anchors = generateTargets(gtbbox[0], image.size()[-2:], classification.size()[-2:])
+
+        posidx = list(range(0, 2 * len(AnchorShapes) - 1, 2))
+        clspos = clstargets[0][posidx].contiguous().view(-1)
+        objscore = classification[0][posidx].contiguous().view(-1)
+        k = len(AnchorShapes)
+        cxidx = list(range(0, 4*k, 4))
+        cyidx = list(range(1, 4*k, 4))
+        widx = list(range(2, 4*k, 4))
+        hidx = list(range(3, 4*k, 4))
+        bboxdelta = torch.cat((bboxdelta[0][cxidx].contiguous().view(-1, 1),
+                                    bboxdelta[0][cyidx].contiguous().view(-1, 1),
+                                    bboxdelta[0][widx].contiguous().view(-1, 1),
+                                    bboxdelta[0][hidx].contiguous().view(-1, 1)), dim=1)
+
+        postargetidx = (clspos > 0).nonzero()[:, 0].cpu()
+        bboxdeltacpu = bboxdelta.data.cpu()
+        anchors = center_size(anchors)
+        anchors = anchors.cpu()
+        bboxarray = bboxdeltacpu+anchors
+
+        bboxarray = point_form(bboxarray)
+        objscore = objscore.data.cpu()
+        keep, count = nms(bboxarray, objscore, 0.3, 200)
+        bboxarray = bboxarray[keep[:count]]
+
+        bboxarray = bboxarray.numpy()
+        img = np.array(data['image'])
+        img = img[0, 0, :, :]
+        imgposanchors = np.array(img)
+        imgbboxpred = np.array(img)
+        gtbbox = gtbbox[0].cpu().numpy()
+
+        fig = plot.figure()
+
+        drawRectP(gtbbox, img)
+        fig.add_subplot(1, 3, 1)
+        disp1 = plot.imshow(img)
+
+        drawRectC(anchors[postargetidx], imgposanchors)
+        fig.add_subplot(1, 3, 2)
+        disp2 = plot.imshow(imgposanchors)
+
+        drawRectP(bboxarray, imgbboxpred)
+        fig.add_subplot(1, 3, 3)
+        disp3 = plot.imshow(imgbboxpred)
+
+        plot.show()
+        1+1
+        break
     
     pass
+
+
+def drawRectC(bboxarray, img):
+    for bbox in bboxarray:
+        cv2.rectangle(img, (int(np.round(bbox[0]-bbox[2]/2)), int(round(bbox[1]-bbox[3]/2))),
+                        (int(round(bbox[0]+bbox[2]/2)), int(round(bbox[1]+bbox[3]/2))),
+                        (255, 255, 255), 1)
+        pass
+
+
+def drawRectP(bboxarray, img):
+    for bbox in bboxarray:
+        cv2.rectangle(img, (int(np.round(bbox[0])), int(round(bbox[1]))),
+                        (int(round(bbox[2])), int(round(bbox[3]))),
+                        (255, 255, 255), 1)
+        pass
 
 
 def validateRPN():
@@ -98,8 +140,8 @@ def trainRPN(epochs=4, a=0.001, b=0.1, train_backbone=False, init_backbone=False
     N = 100
     dataset_size = len(dataset)
 
-    clambda = 1
-    blambda = 10
+    clambda = 0
+    blambda = 0.1
     for epoch in range(epochs):
         optimizer = optimize.Adam(filter(lambda p: p.requires_grad, net.parameters()), lr=a * (b ** epoch))
         loop_counter = 0
@@ -159,7 +201,7 @@ def bboxdeltaloss(bboxtargets, bboxdelta, clstargets, anchors, criterion):
     tdelta = torch.cat((bboxdelta[:, :2] / anchors[:, 2:],
                         torch.log((bboxdelta[:, 2:]+anchors[:, 2:]+1e-3)/anchors[:, 2:])), dim=1)
     ttarget = torch.cat((bboxtargets[:, :2] / anchors[:, 2:],
-                                torch.log((bboxtargets[:, 2:]+anchors[:, 2:]+1e-3)/anchors[:, 2:])), dim=1)
+                        torch.log((bboxtargets[:, 2:]+anchors[:, 2:]+1e-3)/anchors[:, 2:])), dim=1)
 
     return criterion(tdelta, ttarget)
 
