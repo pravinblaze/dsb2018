@@ -6,7 +6,7 @@ from bboxutils import center_size
 
 def generateTargets(gtbbox, data_shape, heatmap_shape):
 
-    anchors = generateAnchros(data_shape, heatmap_shape)
+    anchors = generateAnchors(data_shape, heatmap_shape)
 
     ious = jaccard(gtbbox, anchors)
 
@@ -107,7 +107,7 @@ def clsTargets(ious, heatmap_shape):
     return clstarget
 
 
-def generateAnchros(input_shape, heatmap_shape):
+def generateAnchors(input_shape, heatmap_shape):
     """ Generates array of anchors in the form xmin, ymin, xmax, ymax """
 
     k = len(AnchorShapes)

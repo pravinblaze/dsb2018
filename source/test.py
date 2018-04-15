@@ -1,16 +1,16 @@
 ''' Testing visualizerpn '''
 
-from testcode import visualizeRPN
-visualizeRPN()
+# from testcode import visualizeRPN
+# visualizeRPN()
 
 ''' Testing validateRPN '''
 
-# from rpn import validateRPN
-# validateRPN()
+from testcode import validateRPN
+validateRPN()
 
 ''' Testing trainRPN '''
 
-# from rpn import trainRPN
+# from train import trainRPN
 #
 # trainRPN(epochs=4, a=0.001, b=0.1,
 #          train_backbone=True,

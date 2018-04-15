@@ -9,10 +9,10 @@ from constants import DATA
 from datamod import rpnDataset
 from constants import AnchorShapes
 from torch.autograd import Variable
-from generate_targets import generateTargets
+from generate import generateTargets
 import numpy as np
-from loss_functions import bboxdeltaloss
-from loss_functions import classificationloss
+from loss import bboxdeltaloss
+from loss import classificationloss
 from torchvision import transforms
 from datamod import backboneDatasetLoader
 from torch import nn
