@@ -4,12 +4,108 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import torch.optim as optimize
-from torchvision import transforms
-from torch.autograd import Variable
-from datamod import backboneDatasetLoader
 from constants import DATA
 from constants import AnchorShapes
+
+
+class maskgen2(nn.Module):
+    def __init__(self):
+        super(maskgen2, self).__init__()
+        self.conv1 = nn.Conv2d(1, 8, 3, 1, 1)
+        self.conv2 = nn.Conv2d(8, 8, 3, 1, 1)
+        self.conv3 = nn.Conv2d(8, 16, 3, 1, 1)
+        self.conv4 = nn.Conv2d(16, 16, 3, 1, 1)
+        self.conv5 = nn.Conv2d(16, 8, 3, 1, 1)
+        self.conv6 = nn.Conv2d(8, 4, 3, 1, 1)
+        self.conv7 = nn.Conv2d(4, 1, 3, 1, 1)
+        self.bn8 = nn.BatchNorm2d(8)
+        self.bn16 = nn.BatchNorm2d(16)
+        self.bn4 = nn.BatchNorm2d(4)
+        self.bn1 = nn.BatchNorm2d(1)
+        pass
+
+    def forward(self, input):
+
+        out1 = F.relu(self.bn8(self.conv1(input)))
+        out2 = F.relu(self.bn8(self.conv2(out1)))
+        out3 = F.relu(self.bn16(self.conv3(out2)))
+        out4 = F.relu(self.bn16(self.conv4(out3)))
+        out5 = F.relu(self.bn8(self.conv5(out4)))
+        out6 = F.relu(self.bn4(self.conv6(out5)))
+        out = F.relu(self.bn1(self.conv7(out6)))
+
+        return out
+
+
+class maskgen(nn.Module):
+    def __init__(self):
+        super(maskgen, self).__init__()
+        self.conv00 = nn.Conv2d(32, 32, 3, 1, 1)
+        self.conv01 = nn.Conv2d(32, 32, 3, 1, 1)
+        self.tconv1 = nn.ConvTranspose2d(32, 16, 2, 2)
+        self.tconv2 = nn.ConvTranspose2d(16, 8, 2, 2)
+        self.tconv3 = nn.ConvTranspose2d(8, 4, 2, 2)
+        self.conv11 = nn.Conv2d(16, 16, 3, 1, 1)
+        self.conv12 = nn.Conv2d(16, 16, 3, 1, 1)
+        self.conv21 = nn.Conv2d(8, 8, 3, 1, 1)
+        self.conv22 = nn.Conv2d(8, 8, 3, 1, 1)
+        self.conv31 = nn.Conv2d(4, 4, 3, 1, 1)
+        self.conv32 = nn.Conv2d(4, 1, 3, 1, 1)
+        self.bn32 = nn.BatchNorm2d(32)
+        self.bn16 = nn.BatchNorm2d(16)
+        self.bn8 = nn.BatchNorm2d(8)
+        self.bn4 = nn.BatchNorm2d(4)
+        self.bn1 = nn.BatchNorm2d(1)
+
+    def forward(self, heatmap):     # assuming heatmap in shape 32*4*4
+        out1 = F.relu(self.bn32(self.conv00(heatmap)))
+        out1 = F.relu(self.bn32(self.conv01(out1)))
+        out1 = F.relu(self.bn16(self.tconv1(out1)))  # out 8*8
+        out1 = F.relu(self.bn16(self.conv11(out1)))
+        out1 = F.relu(self.bn16(self.conv12(out1)))
+
+        out2 = F.relu(self.bn8(self.tconv2(out1)))  # out 16*16
+        out2 = F.relu(self.bn8(self.conv21(out2)))
+        out2 = F.relu(self.bn8(self.conv22(out2)))
+
+        out3 = F.relu(self.bn4(self.tconv3(out2)))  # out 32*32
+        out3 = F.relu(self.bn4(self.conv31(out3)))
+        out3 = F.relu(self.bn1(self.conv32(out3)))
+
+        return out3
+
+
+class nucleusDetect(nn.Module):
+
+    def __init__(self):
+        super(nucleusDetect, self).__init__()
+        self.fc = nn.Linear(32 * 4 * 4, 2)
+
+    def forward(self, x):
+        x = x.view(-1, 32 * 4 * 4)
+        out = self.fc(x)
+        return out
+
+
+class rpnheatmap(nn.Module):
+
+    def __init__(self):
+        super(rpnheatmap, self).__init__()
+        self.k = len(AnchorShapes)
+        self.convdepth = 128
+        self.backbone = backboneFeature()
+        self.bn = nn.BatchNorm2d(self.convdepth)
+        self.bn2k = nn.BatchNorm2d(2*self.k)
+        self.bn4k = nn.BatchNorm2d(4*self.k)
+        self.c = nn.Conv2d(32, self.convdepth, 3, padding=1)
+        self.classify = nn.Conv2d(self.convdepth, 2*self.k, 1)
+        self.boxdelta = nn.Conv2d(self.convdepth, 4*self.k, 1)
+        pass
+
+    def forward(self, x):
+        features = self.backbone(x)
+        return features
+    pass
 
 
 class rpn(nn.Module):

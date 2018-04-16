@@ -13,6 +13,149 @@ from torchvision import transforms
 from nnmod import xavier_init
 from datamod import backboneDatasetLoader
 from torch import nn
+from nnmod import nucleusDetect
+from nnmod import rpnheatmap
+from loss import maskgenloss
+from nnmod import maskgen
+from nnmod import maskgen2
+
+
+def trainmaskgen2(epochs=4, a=0.001, b=0.1, d=8, save_model=True):
+    masknet = maskgen2().cuda()
+    criterion = nn.CrossEntropyLoss().cuda()
+
+    dataset = rpnDataset(DATA + 'dataset/rpn/')
+    dataloader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=True)
+
+    for epoch in range(epochs):  # loop over the dataset multiple times
+        optimizer = optimize.Adam(masknet.parameters(), lr=a * (b ** (epoch // d)))
+        for i, data in enumerate(dataloader, 0):
+
+            targetmasks = Variable(torch.cuda.LongTensor(np.array(data['masks'])))
+            targetmasks.requires_grad = False
+            crops = Variable(torch.cuda.FloatTensor(np.array(data['crops'])))
+            targetmasks, crops = targetmasks / 255, crops / 255
+            targetmasks = targetmasks[0].view(-1, 1, 32, 32)
+            crops = crops[0].view(-1, 1, 32, 32)
+
+            masks = masknet(crops)
+
+            loss = maskgenloss(targetmasks, masks, criterion)
+            loss.backward()
+            optimizer.step()
+
+            if i % 1 == 0:
+                print('Epoch {}, progress {:.3f}, training loss: {:.5f}'
+                      .format(epoch + 1, 100 * i / len(dataset), loss.data[0]))
+
+            pass
+
+    print('Training finished successfully !')
+    if save_model:
+        print('Saving model to disk ... ')
+        torch.save(masknet.state_dict(), DATA + 'models/' + masknet.__class__.__name__ + '.torch')
+        print('Model saved to disk !')
+
+    pass
+
+
+def trainMaskgen(epochs=4, a=0.001, b=0.1, d=8, save_model=True):
+
+    masknet = maskgen().cuda()
+    heatmap = rpnheatmap().cuda()
+    heatmap.load_state_dict(torch.load(DATA + 'models/rpn.torch'))
+    for p in heatmap.parameters():
+        p.requires_grad = False
+    criterion = nn.CrossEntropyLoss().cuda()
+
+    dataset = rpnDataset(DATA + 'dataset/rpn/')
+    dataloader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=True)
+
+    for epoch in range(epochs):  # loop over the dataset multiple times
+        optimizer = optimize.Adam(masknet.parameters(), lr=a * (b ** (epoch//d)))
+        for i, data in enumerate(dataloader, 0):
+
+            targetmasks = Variable(torch.cuda.LongTensor(np.array(data['masks'])))
+            targetmasks.requires_grad = False
+            crops = Variable(torch.cuda.FloatTensor(np.array(data['crops'])))
+            targetmasks, crops = targetmasks/255, crops/255
+            targetmasks = targetmasks[0].view(-1, 1, 32, 32)
+            crops = crops[0].view(-1, 1, 32, 32)
+
+            features = heatmap(crops)
+            masks = masknet(features)
+
+            loss = maskgenloss(targetmasks, masks, criterion)
+            loss.backward()
+            optimizer.step()
+
+            if i % 1 == 0:
+                print('Epoch {}, progress {:.3f}, training loss: {:.5f}'
+                      .format(epoch + 1, 100*i/len(dataset), loss.data[0]))
+
+            pass
+
+    print('Training finished successfully !')
+    if save_model:
+        print('Saving model to disk ... ')
+        torch.save(masknet.state_dict(), DATA+'models/'+masknet.__class__.__name__+'.torch')
+        print('Model saved to disk !')
+
+    pass
+
+
+def trainNucleusDetect(epochs=2, batch_size=100, a=0.001, b=0.1, save_model=True):
+    classifier = nucleusDetect().cuda()
+    heatmap = rpnheatmap().cuda()
+    heatmap.load_state_dict(torch.load(DATA + 'models/rpn.torch'))
+    for p in heatmap.parameters():
+        p.requires_grad = False
+
+    trainloader, validloader = backboneDatasetLoader(batch_size=batch_size)
+    criterion = nn.CrossEntropyLoss()
+    validiter = iter(validloader)
+    validdata = validiter.next()
+    validinputs, validlabels = validdata
+    validinputs = Variable(validinputs).cuda()
+    validlabels = Variable(validlabels)
+
+    for epoch in range(epochs):  # loop over the dataset multiple times
+        optimizer = optimize.Adam(classifier.parameters(), lr=a * (b ** (epoch//2)))
+        for i, data in enumerate(trainloader, 0):
+
+            # get the inputs
+            inputs, labels = data
+
+            # wrap them in Variable
+            inputs, labels = Variable(inputs).cuda(), Variable(labels)
+
+            # zero the parameter gradients
+            optimizer.zero_grad()
+
+            # forward + backward + optimize
+            features = heatmap(inputs)
+            outputs = classifier(features)
+            loss = criterion(outputs.cpu(), labels)
+            loss.backward()
+            optimizer.step()
+
+            # validataion loss
+            validfeatures = heatmap(validinputs)
+            validoutputs = classifier(validfeatures)
+            validloss = criterion(validoutputs.cpu(), validlabels)
+
+            # print statistics
+            if i % (1+1000//batch_size) == 0:
+                print('Epoch %d, batch %5d, training loss: %.5f, validation loss: %.5f'
+                      % (epoch + 1, i + 1, loss.data[0], validloss.data[0]))
+
+    print('Training finished successfully !')
+    if save_model:
+        print('Saving model to disk ... ')
+        torch.save(classifier.state_dict(), DATA+'models/'+classifier.__class__.__name__+'.torch')
+        print('Model saved to disk !')
+
+    pass
 
 
 def trainRPN(epochs=4, a=0.001, b=0.1, train_backbone=False, init_backbone=False, init_rpn=False, save_model=False):

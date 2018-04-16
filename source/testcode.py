@@ -20,11 +20,121 @@ from datamod import loadCropBatches
 import pandas as pd
 from datamod import pickleData
 from datamod import loadMainBatches
+from nnmod import maskgen
+from nnmod import rpnheatmap
+from loss import maskgenloss
+from nnmod import maskgen2
 
 
-def visualizeRPN():
+def visualizeMaskgen2():
+
+    masknet = maskgen2().cuda()
+    masknet.load_state_dict(torch.load(DATA + 'models/' + masknet.__class__.__name__ + '.torch'))
+
+    dataset = rpnDataset(DATA + 'dataset/rpn-validation-set/')
+    dataloader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=True)
+
+    for i, data in enumerate(dataloader, 0):
+        targetmasks = Variable(torch.cuda.FloatTensor(np.array(data['masks'])))
+        crops = Variable(torch.cuda.FloatTensor(np.array(data['crops'])))
+        targetmasks, crops = targetmasks / 255, crops / 255
+        crops = crops[0].view(-1, 1, 32, 32)
+        targetmasks = targetmasks[0].view(-1, 1, 32, 32)
+
+        masks = masknet(crops)
+        length = len(masks)
+        index = np.random.choice(length)
+
+        target = targetmasks.data.cpu()[index, 0].numpy()
+        mask = masks.data.cpu()[index, 0, :, :].numpy()
+        crop = crops.data.cpu()[index, 0, :, :].numpy()
+
+        mask[mask > np.mean(mask)] = 1
+        mask[mask < np.mean(mask)] = 0
+        fig = plot.figure()
+        fig.add_subplot(1, 3, 1)
+        disp1 = plot.imshow(crop)
+        fig.add_subplot(1, 3, 2)
+        disp2 = plot.imshow(target)
+        fig.add_subplot(1, 3, 3)
+        disp3 = plot.imshow(mask)
+        plot.show()
+
+    pass
+
+
+def visualizeMaskgen():
+
+    masknet = maskgen().cuda()
+    masknet.load_state_dict(torch.load(DATA + 'models/' + masknet.__class__.__name__ + '.torch'))
+    heatmap = rpnheatmap().cuda()
+    heatmap.load_state_dict(torch.load(DATA + 'models/rpn.torch'))
+
+    dataset = rpnDataset(DATA + 'dataset/rpn-validation-set/')
+    dataloader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=True)
+
+    for i, data in enumerate(dataloader, 0):
+        targetmasks = Variable(torch.cuda.FloatTensor(np.array(data['masks'])))
+        crops = Variable(torch.cuda.FloatTensor(np.array(data['crops'])))
+        targetmasks, crops = targetmasks / 255, crops / 255
+        crops = crops[0].view(-1, 1, 32, 32)
+        targetmasks = targetmasks[0].view(-1, 1, 32, 32)
+
+        features = heatmap(crops)
+        masks = masknet(features)
+        length = len(masks)
+        index = np.random.choice(length)
+
+        target = targetmasks.data.cpu()[index, 0].numpy()
+        mask = masks.data.cpu()[index, 0, :, :].numpy()
+        crop = crops.data.cpu()[index, 0, :, :].numpy()
+
+        fig = plot.figure()
+        fig.add_subplot(1, 3, 1)
+        disp1 = plot.imshow(crop)
+        fig.add_subplot(1, 3, 2)
+        disp2 = plot.imshow(target)
+        fig.add_subplot(1, 3, 3)
+        disp3 = plot.imshow(mask)
+        plot.show()
+
+    pass
+
+
+def validateMaskgen():
+
+    masknet = maskgen().cuda()
+    masknet.load_state_dict(torch.load(DATA + 'models/' + masknet.__class__.__name__ + '.torch'))
+    heatmap = rpnheatmap().cuda()
+    heatmap.load_state_dict(torch.load(DATA + 'models/rpn.torch'))
+    criterion = nn.CrossEntropyLoss().cuda()
+
+    dataset = rpnDataset(DATA + 'dataset/rpn-validation-set/')
+    dataloader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=True)
+    runningloss = 0
+    for i, data in enumerate(dataloader, 0):
+        targetmasks = Variable(torch.cuda.LongTensor(np.array(data['masks'])))
+        targetmasks.requires_grad = False
+        crops = Variable(torch.cuda.FloatTensor(np.array(data['crops'])))
+        targetmasks, crops = targetmasks / 255, crops / 255
+        targetmasks = targetmasks[0].view(-1, 1, 32, 32)
+        crops = crops[0].view(-1, 1, 32, 32)
+
+        features = heatmap(crops)
+        masks = masknet(features)
+
+        loss = maskgenloss(targetmasks, masks, criterion)
+        runningloss += loss
+    runningloss = runningloss/len(dataset)
+    print(" Mean NLL loss over validation set :  ", runningloss)
+    pass
+
+
+def visualizeRPN(donms=True, o=0.3, topk=200):
     net = rpn().cuda()
     net.load_state_dict(torch.load(DATA + 'models/rpn.torch'))
+    # net.load_state_dict(torch.load(DATA + 'models/rpn_tp5tn1.torch'))
+    # net.load_state_dict(torch.load(DATA + 'models/rpn_tp7tn3.torch'))
 
     dataset = rpnDataset(DATA + 'dataset/rpn-validation-set/')
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=True)
@@ -53,12 +163,14 @@ def visualizeRPN():
         bboxdeltacpu = bboxdelta.data.cpu()
         anchors = center_size(anchors)
         anchors = anchors.cpu()
-        bboxarray = bboxdeltacpu[postargetidx] + anchors[postargetidx]
+        bboxarray = bboxdeltacpu + anchors
 
         bboxarray = point_form(bboxarray)
         objscore = objscore.data.cpu()
-        keep, count = nms(bboxarray, objscore[postargetidx], 0.3, 200)
-        bboxarray = bboxarray[keep[:count]]
+        if donms:
+            keep, count = nms(bboxarray, objscore, overlap=o, top_k=topk)
+            bboxarray = bboxarray[keep[:count]]
+            print("Number of proposals : ", count)
 
         bboxarray = bboxarray.numpy()
         img = np.array(data['image'])
@@ -82,7 +194,6 @@ def visualizeRPN():
         disp3 = plot.imshow(imgbboxpred)
 
         plot.show()
-        1 + 1
         # break
 
     pass

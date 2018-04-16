@@ -1,12 +1,42 @@
+''' Testing maskgen2 '''
+
+# from train import trainmaskgen2
+# trainmaskgen2(epochs=4,
+#               a=0.001, b=0.1, d=8,
+#               save_model=True)
+
+# from testcode import visualizeMaskgen2
+# visualizeMaskgen2()
+
+''' Testing maskgen '''
+
+# from testcode import validateMaskgen
+# validateMaskgen()
+
+# from testcode import visualizeMaskgen
+# visualizeMaskgen()
+
+''' Train maskgen '''
+
+
+# from train import trainMaskgen
+#
+# trainMaskgen(epochs=4, a=0.001, b=0.1, d=1)
+
+''' Train nucleusDetect '''
+
+# from train import trainNucleusDetect
+# trainNucleusDetect(epochs=4, batch_size=100, a=0.01, b=0.1)
+
 ''' Testing visualizerpn '''
 
 # from testcode import visualizeRPN
-# visualizeRPN()
+# visualizeRPN(donms=True, o=0.2, topk=200)
 
 ''' Testing validateRPN '''
 
-from testcode import validateRPN
-validateRPN()
+# from testcode import validateRPN
+# validateRPN()
 
 ''' Testing trainRPN '''
 
@@ -17,6 +47,8 @@ validateRPN()
 #          init_backbone=False,
 #          init_rpn=False,
 #          save_model=True)
+
+# Set tpos, tneg for generate.clsTargets
 
 ''' Testing generateAnchors '''
 
@@ -77,13 +109,13 @@ validateRPN()
 
 ''' Testing prepareRPNdataset '''
 
-# from datamod01 import prepareRPNdataset
+# from datamod import prepareRPNdataset
 #
 # prepareRPNdataset()
 
 # import os
-# from src.datamod01 import loadPickle
-# from src.constants import DATA
+# from datamod import loadPickle
+# from constants import DATA
 # import random
 #
 # paths = os.listdir(DATA+'dataset/rpn/')
@@ -128,15 +160,15 @@ validateRPN()
 
 ''' Testing validateBackboneNet '''
 
-# from src.nnmod01 import validateBackboneNet
-# from src.nnmod01 import backbone01
+# from testcode import validateBackboneNet
+# from nnmod import backbone01
 #
 # validateBackboneNet(backbone01())
 
 ''' Testing trainBackbone01'''
 
-# from src.nnmod01 import trainBackbone01
-# from src.nnmod01 import backbone01
+# from train import trainBackbone
+# from nnmod import backbone01
 #
 # trainBackbone(backbone01(), batch_size=100, epochs=4,
 #                 a=0.0001, b=0.1,

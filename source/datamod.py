@@ -41,9 +41,11 @@ def prepareRPNdataset():
             loop_counter += 1
             img = data[imgid]['image']
             img = img.astype(np.uint8)
+            imgray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
             shape = data[imgid]['shape']
             bbox_array = np.zeros((0, 4), np.uint8)
             mask_array = np.zeros((0, 32, 32), np.uint8)
+            crop_array = np.zeros((0, 32, 32), np.uint8)
 
             for mask in data[imgid]['masks']:
 
@@ -58,17 +60,20 @@ def prepareRPNdataset():
                 m = 0.1  # margin
                 x1 = max(0, round(x - w * m))
                 y1 = max(0, round(y - h * m))
-                x2 = min(shape[1], round(x + w * (1 + m)) + 1)
-                y2 = min(shape[0], round(y + h * (1 + m)) + 1)
+                x2 = min(shape[1], round(x + w * (1 + m)))
+                y2 = min(shape[0], round(y + h * (1 + m)))
 
                 maskcrop = mask_uint8[y1:y2, x1:x2]
                 maskcrop = cv2.resize(maskcrop, (32, 32))
+                imcrop = imgray[y1:y2, x1:x2]
+                imcrop = cv2.resize(imcrop, (32, 32))
                 mask_array = np.append(mask_array, np.expand_dims(maskcrop, axis=0), axis=0)
+                crop_array = np.append(crop_array, np.expand_dims(imcrop, axis=0), axis=0)
 
                 bbox = np.array([x1, y1, x2, y2])
                 bbox_array = np.append(bbox_array, np.expand_dims(bbox, axis=0), axis=0)
 
-            datadict = {"id": imgid, "image": img, "bbox": bbox_array, "masks": mask_array}
+            datadict = {"id": imgid, "image": img, "bbox": bbox_array, "masks": mask_array, "crops": crop_array}
             if loop_counter % 10 == 0:
                 print("pickling rpn data %.3f %%" % ((100*loop_counter)/670,))
             pickleData(DATA + 'dataset/rpn/' + str(imgid) + '.p', datadict)

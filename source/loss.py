@@ -5,6 +5,14 @@ from bboxutils import center_size
 import numpy as np
 
 
+def maskgenloss(targetmasks, masks, criterion):
+
+    targetmasks = targetmasks.view(-1)
+    masks = torch.cat(((1-masks).view(-1, 1), masks.view(-1, 1)), dim=1)
+
+    return criterion(masks, targetmasks)
+
+
 def bboxdeltaloss(bboxtargets, bboxdelta, clstargets, anchors, criterion):
     k = len(AnchorShapes)
     cxidx = list(range(0, 4 * k, 4))
@@ -45,8 +53,8 @@ def classificationloss(classification, clstargets, criterion, N=256, training=Fa
     clspredpos = classification[0][posidx]
     clspredneg = classification[0][negidx]
 
-    targetpos = clspos[clspos > 0].contiguous().view(-1)
-    targetneg = clspos[clsneg > 0].contiguous().view(-1)
+    targetpos = clsneg[clspos > 0].contiguous().view(-1)
+    targetneg = clsneg[clsneg > 0].contiguous().view(-1)
     predictionpos = torch.cat((clspredpos[clspos > 0].contiguous().view(-1, 1),
                                clspredneg[clspos > 0].contiguous().view(-1, 1)), dim=1)
     predictionneg = torch.cat((clspredpos[clsneg > 0].contiguous().view(-1, 1),
