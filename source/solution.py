@@ -12,6 +12,8 @@ import cv2
 from nnmod import backbone01
 from nnmod import maskgen2
 from generate import generateAnchors
+import os
+from torch import nn
 
 rpnnet = rpn().cuda()
 rpnnet.load_state_dict(torch.load(DATA + 'models/rpn.torch'))
@@ -19,6 +21,7 @@ clsnet = backbone01().cuda()
 clsnet.load_state_dict(torch.load(DATA + 'models/backbone01.torch'))
 masknet = maskgen2().cuda()
 masknet.load_state_dict(torch.load(DATA + 'models/maskgen2.torch'))
+threshold = nn.Sigmoid()
 
 dataset = rpnDataset(DATA + 'dataset/rpn-validation-set/')
 dataloader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=True)
@@ -57,7 +60,7 @@ for data in dataloader:
     imgray = np.array(data['image'], np.uint8)[0, 0]
     crop_array = np.zeros((0, 32, 32), np.uint8)
     for bbox in bboxarray:
-        bbox = np.rint(bbox).astype(np.uint8)
+        bbox = np.rint(bbox).astype(np.int)
         x1, y1, x2, y2 = bbox[0], bbox[1], bbox[2], bbox[3]
         imcrop = imgray[y1:y2, x1:x2]
         try:
@@ -70,8 +73,33 @@ for data in dataloader:
     crops = crops.view(-1, 1, 32, 32)
     clspred = clsnet(crops)
     masks = masknet(crops)
-    clspred.max(dim=1)
-    1+1
+    masks = threshold(masks)
+    clspred = clspred.max(dim=1)[1]
+    masks = masks.data * clspred.data.view(clspred.size()[0], 1, 1, 1).type(torch.cuda.FloatTensor)
+    masks = masks.view(-1, 32, 32).cpu().numpy()
+    th = 0.6
+    masks[masks > th] = 1
+    masks[masks < th] = 0
+    masks = masks * 255
+    masks = masks.astype(np.uint8)
+    for i, mask in enumerate(masks, 0):
+        if mask.max() > 0:
+            maskout = np.zeros(imgray.shape, np.uint8)
+            bbox = np.rint(bboxarray[i]).astype(np.int)
+            x1, y1, x2, y2 = bbox[0], bbox[1], bbox[2], bbox[3]
+            x1 = 0 if x1 < 0 else x1
+            y1 = 0 if y1 < 0 else y1
+            x2 = maskout.shape[1] if x2 > maskout.shape[1] else x2
+            y2 = maskout.shape[0] if y2 > maskout.shape[0] else y2
+            try:
+                maskout[y1:y2, x1:x2] = cv2.resize(mask, (abs(x2-x1), abs(y2-y1)))
+            except Exception:
+                pass
+            if not os.path.isdir(DATA + 'results/validation-set/' + data['id'][0] + '/'):
+                os.makedirs(DATA + 'results/validation-set/' + data['id'][0] + '/')
+            cv2.imwrite(DATA + 'results/validation-set/' + data['id'][0] + '/' + str(i) + '.png', maskout)
+            print("Writing masks ... "+ data['id'][0]+", "+str(i))
+        pass
     pass
 
 

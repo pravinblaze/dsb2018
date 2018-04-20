@@ -2,7 +2,7 @@
 
 # from train import trainmaskgen2
 # trainmaskgen2(epochs=4,
-#               a=0.001, b=0.1, d=8,
+#               a=0.001, b=0.1, d=1,
 #               save_model=True)
 
 # from testcode import visualizeMaskgen2

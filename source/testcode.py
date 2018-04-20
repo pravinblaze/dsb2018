@@ -30,6 +30,7 @@ def visualizeMaskgen2():
 
     masknet = maskgen2().cuda()
     masknet.load_state_dict(torch.load(DATA + 'models/' + masknet.__class__.__name__ + '.torch'))
+    threshold = nn.Sigmoid().cuda()
 
     dataset = rpnDataset(DATA + 'dataset/rpn-validation-set/')
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=True)
@@ -42,6 +43,7 @@ def visualizeMaskgen2():
         targetmasks = targetmasks[0].view(-1, 1, 32, 32)
 
         masks = masknet(crops)
+        masks = threshold(masks)
         length = len(masks)
         index = np.random.choice(length)
 
@@ -49,8 +51,10 @@ def visualizeMaskgen2():
         mask = masks.data.cpu()[index, 0, :, :].numpy()
         crop = crops.data.cpu()[index, 0, :, :].numpy()
 
-        mask[mask > np.mean(mask)] = 1
-        mask[mask < np.mean(mask)] = 0
+        th = 0.6
+        mask[mask > th] = 1
+        mask[mask < th] = 0
+
         fig = plot.figure()
         fig.add_subplot(1, 3, 1)
         disp1 = plot.imshow(crop)

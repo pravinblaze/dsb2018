@@ -11,28 +11,31 @@ from constants import AnchorShapes
 class maskgen2(nn.Module):
     def __init__(self):
         super(maskgen2, self).__init__()
-        self.conv1 = nn.Conv2d(1, 8, 3, 1, 1)
-        self.conv2 = nn.Conv2d(8, 8, 3, 1, 1)
-        self.conv3 = nn.Conv2d(8, 16, 3, 1, 1)
-        self.conv4 = nn.Conv2d(16, 16, 3, 1, 1)
-        self.conv5 = nn.Conv2d(16, 8, 3, 1, 1)
-        self.conv6 = nn.Conv2d(8, 4, 3, 1, 1)
-        self.conv7 = nn.Conv2d(4, 1, 3, 1, 1)
-        self.bn8 = nn.BatchNorm2d(8)
+        self.conv1 = nn.Conv2d(1, 16, 9, 1, 4)
+        self.conv2 = nn.Conv2d(16, 16, 9, 1, 4)
+        self.conv3 = nn.Conv2d(16, 16, 9, 1, 4)
+        self.conv4 = nn.Conv2d(16, 16, 9, 1, 4)
+        self.conv5 = nn.Conv2d(16, 16, 9, 1, 4)
+        self.conv6 = nn.Conv2d(16, 16, 9, 1, 4)
+        self.conv7 = nn.Conv2d(16, 16, 9, 1, 4)
+        self.conv8 = nn.Conv2d(16, 1, 9, 1, 4)
         self.bn16 = nn.BatchNorm2d(16)
-        self.bn4 = nn.BatchNorm2d(4)
         self.bn1 = nn.BatchNorm2d(1)
         pass
 
-    def forward(self, input):
+    def forward(self, x):
 
-        out1 = F.relu(self.bn8(self.conv1(input)))
-        out2 = F.relu(self.bn8(self.conv2(out1)))
+        out1 = F.relu(self.bn16(self.conv1(x)))
+        out2 = F.relu(self.bn16(self.conv2(out1)))
         out3 = F.relu(self.bn16(self.conv3(out2)))
         out4 = F.relu(self.bn16(self.conv4(out3)))
-        out5 = F.relu(self.bn8(self.conv5(out4)))
-        out6 = F.relu(self.bn4(self.conv6(out5)))
-        out = F.relu(self.bn1(self.conv7(out6)))
+        out5 = F.relu(self.bn16(self.conv5(out4)))
+        out5 = F.relu(self.bn16(out5+out3))
+        out6 = F.relu(self.bn16(self.conv6(out5)))
+        out6 = F.relu(self.bn16(out6+out2))
+        out7 = F.relu(self.bn16(self.conv7(out6)))
+        out7 = F.relu(self.bn16(out7+out1))
+        out = F.relu(self.bn1(self.conv8(out7)))
 
         return out
 
