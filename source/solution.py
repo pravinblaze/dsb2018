@@ -23,12 +23,18 @@ masknet = maskgen2().cuda()
 masknet.load_state_dict(torch.load(DATA + 'models/maskgen2.torch'))
 threshold = nn.Sigmoid()
 
-dataset = rpnDataset(DATA + 'dataset/rpn-validation-set/')
+# mode = 'valid'
+mode = 'test'
+
+if mode == 'valid':
+    dataset_path = DATA + 'dataset/rpn-validataion-set'
+if mode == 'test':
+    dataset_path = DATA + 'dataset/rpn-test/'
+dataset = rpnDataset(dataset_path)
 dataloader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=True)
 
 for data in dataloader:
     image = torch.cuda.FloatTensor(np.array(data['image']))
-    gtbbox = data['bbox'].type(torch.cuda.FloatTensor)
 
     classification, bboxdelta = rpnnet(Variable(image))
 
@@ -95,9 +101,13 @@ for data in dataloader:
                 maskout[y1:y2, x1:x2] = cv2.resize(mask, (abs(x2-x1), abs(y2-y1)))
             except Exception:
                 pass
-            if not os.path.isdir(DATA + 'results/validation-set/' + data['id'][0] + '/'):
-                os.makedirs(DATA + 'results/validation-set/' + data['id'][0] + '/')
-            cv2.imwrite(DATA + 'results/validation-set/' + data['id'][0] + '/' + str(i) + '.png', maskout)
+            if mode == 'valid':
+                result_path = 'validation-set'
+            if mode == 'test':
+                result_path = 'test-set'
+            if not os.path.isdir(DATA + 'results/'+result_path+'/' + data['id'][0] + '/'):
+                os.makedirs(DATA + 'results/'+result_path+'/' + data['id'][0] + '/')
+            cv2.imwrite(DATA + 'results/'+result_path+'/' + data['id'][0] + '/' + str(i) + '.png', maskout)
             print("Writing masks ... "+ data['id'][0]+", "+str(i))
         pass
     pass

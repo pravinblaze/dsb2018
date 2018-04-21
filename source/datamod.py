@@ -32,9 +32,9 @@ class rpnDataset(torch.utils.data.Dataset):
         return data
 
 
-def prepareRPNdataset():
+def prepareRPNdataset(dataset='train'):
 
-    load = loadMainBatches('train')
+    load = loadMainBatches(dataset)
     loop_counter = 0
     for data in load:
         for imgid in data.keys():
@@ -47,36 +47,43 @@ def prepareRPNdataset():
             mask_array = np.zeros((0, 32, 32), np.uint8)
             crop_array = np.zeros((0, 32, 32), np.uint8)
 
-            for mask in data[imgid]['masks']:
+            if dataset == 'train':
+                for mask in data[imgid]['masks']:
 
-                mask_uint8 = mask.astype(np.uint8)
+                    mask_uint8 = mask.astype(np.uint8)
 
-                im2, contours, _ = cv2.findContours(mask_uint8, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-                if len(contours) > 0:
-                    x, y, w, h = cv2.boundingRect(contours[0])
-                else:
-                    # print("Debugging: no contour found ...")
-                    pass
-                m = 0.1  # margin
-                x1 = max(0, round(x - w * m))
-                y1 = max(0, round(y - h * m))
-                x2 = min(shape[1], round(x + w * (1 + m)))
-                y2 = min(shape[0], round(y + h * (1 + m)))
+                    im2, contours, _ = cv2.findContours(mask_uint8, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+                    if len(contours) > 0:
+                        x, y, w, h = cv2.boundingRect(contours[0])
+                    else:
+                        # print("Debugging: no contour found ...")
+                        pass
+                    m = 0.1  # margin
+                    x1 = max(0, round(x - w * m))
+                    y1 = max(0, round(y - h * m))
+                    x2 = min(shape[1], round(x + w * (1 + m)))
+                    y2 = min(shape[0], round(y + h * (1 + m)))
 
-                maskcrop = mask_uint8[y1:y2, x1:x2]
-                maskcrop = cv2.resize(maskcrop, (32, 32))
-                imcrop = imgray[y1:y2, x1:x2]
-                imcrop = cv2.resize(imcrop, (32, 32))
-                mask_array = np.append(mask_array, np.expand_dims(maskcrop, axis=0), axis=0)
-                crop_array = np.append(crop_array, np.expand_dims(imcrop, axis=0), axis=0)
+                    maskcrop = mask_uint8[y1:y2, x1:x2]
+                    maskcrop = cv2.resize(maskcrop, (32, 32))
+                    imcrop = imgray[y1:y2, x1:x2]
+                    imcrop = cv2.resize(imcrop, (32, 32))
+                    mask_array = np.append(mask_array, np.expand_dims(maskcrop, axis=0), axis=0)
+                    crop_array = np.append(crop_array, np.expand_dims(imcrop, axis=0), axis=0)
 
-                bbox = np.array([x1, y1, x2, y2])
-                bbox_array = np.append(bbox_array, np.expand_dims(bbox, axis=0), axis=0)
+                    bbox = np.array([x1, y1, x2, y2])
+                    bbox_array = np.append(bbox_array, np.expand_dims(bbox, axis=0), axis=0)
 
-            datadict = {"id": imgid, "image": img, "bbox": bbox_array, "masks": mask_array, "crops": crop_array}
+            if dataset == 'train':
+                datadict = {"id": imgid, "image": img, "bbox": bbox_array, "masks": mask_array, "crops": crop_array}
+            if dataset == 'test':
+                datadict = {"id": imgid, "image": img}
             if loop_counter % 10 == 0:
                 print("pickling rpn data %.3f %%" % ((100*loop_counter)/670,))
-            pickleData(DATA + 'dataset/rpn/' + str(imgid) + '.p', datadict)
+            if dataset == 'train':
+                pickleData(DATA + 'dataset/rpn/' + str(imgid) + '.p', datadict)
+            if dataset == 'test':
+                pickleData(DATA + 'dataset/rpn-test/' + str(imgid) + '.p', datadict)
 
     pass
 

@@ -111,7 +111,7 @@
 
 # from datamod import prepareRPNdataset
 #
-# prepareRPNdataset()
+# prepareRPNdataset(dataset='test')
 
 # import os
 # from datamod import loadPickle
