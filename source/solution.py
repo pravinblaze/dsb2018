@@ -24,16 +24,19 @@ masknet.load_state_dict(torch.load(DATA + 'models/maskgen2.torch'))
 threshold = nn.Sigmoid()
 
 # mode = 'valid'
-mode = 'test'
+# mode = 'test'
+mode = 'final'
 
 if mode == 'valid':
     dataset_path = DATA + 'dataset/rpn-validataion-set'
 if mode == 'test':
     dataset_path = DATA + 'dataset/rpn-test/'
+if mode == 'final':
+    dataset_path = DATA + 'dataset/final/'
 dataset = rpnDataset(dataset_path)
 dataloader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=True)
 
-for data in dataloader:
+for counter, data in enumerate(dataloader):
     image = torch.cuda.FloatTensor(np.array(data['image']))
 
     classification, bboxdelta = rpnnet(Variable(image))
@@ -86,8 +89,10 @@ for data in dataloader:
     th = 0.6
     masks[masks > th] = 1
     masks[masks < th] = 0
+
     masks = masks * 255
     masks = masks.astype(np.uint8)
+    maskunique = np.zeros(imgray.shape, np.uint8)
     for i, mask in enumerate(masks, 0):
         if mask.max() > 0:
             maskout = np.zeros(imgray.shape, np.uint8)
@@ -101,15 +106,18 @@ for data in dataloader:
                 maskout[y1:y2, x1:x2] = cv2.resize(mask, (abs(x2-x1), abs(y2-y1)))
             except Exception:
                 pass
+            maskout = maskout - maskout * (maskunique/255)
+            maskunique = maskunique+maskout
             if mode == 'valid':
                 result_path = 'validation-set'
             if mode == 'test':
                 result_path = 'test-set'
+            if mode == 'final':
+                result_path = 'final'
             if not os.path.isdir(DATA + 'results/'+result_path+'/' + data['id'][0] + '/'):
                 os.makedirs(DATA + 'results/'+result_path+'/' + data['id'][0] + '/')
             cv2.imwrite(DATA + 'results/'+result_path+'/' + data['id'][0] + '/' + str(i) + '.png', maskout)
-            print("Writing masks ... "+ data['id'][0]+", "+str(i))
+        if i % 10 == 0:
+            print("Solving ... {:.2f} %".format(100*counter/len(dataset)))
         pass
     pass
-
-

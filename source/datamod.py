@@ -76,14 +76,16 @@ def prepareRPNdataset(dataset='train'):
 
             if dataset == 'train':
                 datadict = {"id": imgid, "image": img, "bbox": bbox_array, "masks": mask_array, "crops": crop_array}
-            if dataset == 'test':
+            else:
                 datadict = {"id": imgid, "image": img}
             if loop_counter % 10 == 0:
-                print("pickling rpn data %.3f %%" % ((100*loop_counter)/670,))
+                print("pickling rpn data {:.3f} %".format(100*loop_counter/3000))
             if dataset == 'train':
                 pickleData(DATA + 'dataset/rpn/' + str(imgid) + '.p', datadict)
             if dataset == 'test':
                 pickleData(DATA + 'dataset/rpn-test/' + str(imgid) + '.p', datadict)
+            if dataset == 'final':
+                pickleData(DATA + 'dataset/final/' + str(imgid) + '.p', datadict)
 
     pass
 
@@ -206,9 +208,10 @@ def createMainDataBatches(data_set='train'):
         {id :{'image':numpyArray, 'shape':tupple, 'masks':numpyArray}, ...}
     '''
 
-    data_set_paths = {'train': 'stage1_train/', 'test': 'stage1_test/'}
+    data_set_paths = {'train': 'stage1_train/', 'test': 'stage1_test/', 'final': 'stage2_test/'}
     data_dir = DATA + data_set_paths[data_set]
-    data_pickle_paths = {'train': 'pickle/main_train/', 'test': 'pickle/main_test/'}
+    data_pickle_paths = {'train': 'pickle/main_train/', 'test': 'pickle/main_test/',
+                         'final': 'pickle/final/'}
     data_pickle_dir = DATA + data_pickle_paths[data_set]
     img_id_list = os.listdir(data_dir)
     batch_size = 10
@@ -225,7 +228,7 @@ def createMainDataBatches(data_set='train'):
         path = data_dir + img_id + '/images/' + img_id + '.png'
         img = cv2.imread(path)
         img_shape = np.shape(img)
-        print("pickling image {} of {} ".format(loop_counter,image_list_size))
+        print("pickling image {} of {} ".format(loop_counter, image_list_size))
         print("image shape : ", img_shape)
 
         mask_array = np.zeros((0,)+img_shape[:-1], np.float32)
@@ -265,7 +268,8 @@ def createMainDataBatches(data_set='train'):
 class loadMainBatches():
 
     def __init__(self, data_set='train'):
-        self.data_pickle_paths = {'train': 'pickle/main_train/', 'test': 'pickle/main_test/'}
+        self.data_pickle_paths = {'train': 'pickle/main_train/', 'test': 'pickle/main_test/',
+                                  'final': 'pickle/final/'}
         self.data_pickle_dir = DATA + self.data_pickle_paths[data_set]
         self.batch_no = 0
         pass
@@ -312,7 +316,7 @@ def linearFilter(k, direction=0):
 
 def loadDataN1(data_set='train'):
     ''' Data loader '''
-    data_set_path = {'train': 'stage1_train/', 'test': 'stage1_test/'}
+    data_set_path = {'train': 'stage1_train/', 'test': 'stage1_test/', 'final': 'stage2_test'}
     data_dir = DATA + data_set_path[data_set]
     img_id_list = os.listdir(data_dir)
 

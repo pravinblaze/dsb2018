@@ -111,7 +111,7 @@
 
 # from datamod import prepareRPNdataset
 #
-# prepareRPNdataset(dataset='test')
+# prepareRPNdataset(dataset='final')
 
 # import os
 # from datamod import loadPickle
@@ -228,10 +228,10 @@
 
 ''' Testing createMainDataBatches '''
 
-# from src.datamod01 import createMainDataBatches
-# from src.datamod01 import loadPickle
-# from src.constants import DATA
-# createMainDataBatches('train')
+# from datamod import createMainDataBatches
+# from datamod import loadPickle
+# from constants import DATA
+# createMainDataBatches('final')
 # print("Created mini data batches successfully")
 
 # data = loadPickle(DATA+'pickle/main_test/dataMain1.p')
