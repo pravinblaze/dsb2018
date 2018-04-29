@@ -214,16 +214,19 @@ def visualizeRPN(donms=True, o=0.3, topk=200):
         fig = plot.figure()
 
         drawRectP(gtbbox, img)
-        fig.add_subplot(1, 3, 1)
-        disp1 = plot.imshow(img)
+        disp1 = fig.add_subplot(1, 3, 1)
+        disp1.axis('off')
+        plot.imshow(img)
 
         drawRectC(anchors[postargetidx], imgposanchors)
-        fig.add_subplot(1, 3, 2)
-        disp2 = plot.imshow(imgposanchors)
+        disp2 = fig.add_subplot(1, 3, 2)
+        disp2.axis('off')
+        plot.imshow(imgposanchors)
 
         drawRectP(bboxarray, imgbboxpred)
-        fig.add_subplot(1, 3, 3)
-        disp3 = plot.imshow(imgbboxpred)
+        disp3 = fig.add_subplot(1, 3, 3)
+        disp3.axis('off')
+        plot.imshow(imgbboxpred)
 
         plot.show()
         # break
