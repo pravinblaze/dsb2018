@@ -14,6 +14,8 @@ from nnmod import maskgen2
 from generate import generateAnchors
 import os
 from torch import nn
+import matplotlib.pyplot as plot
+from testcode import drawRectP
 
 rpnnet = rpn().cuda()
 rpnnet.load_state_dict(torch.load(DATA + 'models/rpn.torch'))
@@ -87,7 +89,7 @@ for counter, data in enumerate(dataloader):
     masks = masks.data * clspred.data.view(clspred.size()[0], 1, 1, 1).type(torch.cuda.FloatTensor)
     masks = masks.view(-1, 32, 32).cpu().numpy()
     th = 0.6
-    masks[masks > th] = 1
+    masks[masks >= th] = 1
     masks[masks < th] = 0
 
     masks = masks * 255
@@ -106,7 +108,7 @@ for counter, data in enumerate(dataloader):
                 maskout[y1:y2, x1:x2] = cv2.resize(mask, (abs(x2-x1), abs(y2-y1)))
             except Exception:
                 pass
-            maskout = maskout - maskout * (maskunique/255)
+            maskout = maskout - maskout * (maskunique/200)
             maskunique = maskunique+maskout
             if mode == 'valid':
                 result_path = 'validation-set'

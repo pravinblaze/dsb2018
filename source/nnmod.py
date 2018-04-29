@@ -313,3 +313,31 @@ class singleFilterConv(nn.Module):
         x = self.conv1(x)
         x = F.relu(x)
         return x
+
+
+def linearFilter(k, direction=0):
+    ''' takes k as an integer'''
+    filter = np.zeros((k, k))
+
+    coeff = {0: (1, 0), 1: (1, -1), 2: (0, -1), 3: (-1, -1), 4: (-1, 0), 6: (0, 1), 5: (-1, 1), 7: (1, 1)}
+    x, y = 0, 0
+    b, a = coeff[direction]
+    shift = k // 2
+
+    for i in range(np.shape(filter)[0]):
+        for j in range(np.shape(filter)[1]):
+
+            update = 0
+            y = -(i - shift) * b
+            x = (j - shift) * a
+            line = x + y
+
+            if (line > 0):
+                update = 1
+            elif (line == 0):
+                pass
+            else:
+                update = -1
+
+            filter[i, j] = update
+    return filter

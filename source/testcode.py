@@ -105,10 +105,38 @@ def visualizeMaskgen():
     pass
 
 
-def validateMaskgen():
+def validateMaskgen2(masknet, init=True):
 
-    masknet = maskgen().cuda()
-    masknet.load_state_dict(torch.load(DATA + 'models/' + masknet.__class__.__name__ + '.torch'))
+    masknet.cuda()
+    if init:
+        masknet.load_state_dict(torch.load(DATA + 'models/' + masknet.__class__.__name__ + '.torch'))
+    criterion = nn.CrossEntropyLoss().cuda()
+
+    dataset = rpnDataset(DATA + 'dataset/rpn-validation-set/')
+    dataloader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=True)
+    runningloss = 0
+    for i, data in enumerate(dataloader, 0):
+        targetmasks = Variable(torch.cuda.LongTensor(np.array(data['masks'])))
+        targetmasks.requires_grad = False
+        crops = Variable(torch.cuda.FloatTensor(np.array(data['crops'])))
+        targetmasks, crops = targetmasks / 255, crops / 255
+        targetmasks = targetmasks[0].view(-1, 1, 32, 32)
+        crops = crops[0].view(-1, 1, 32, 32)
+        masks = masknet(crops)
+        loss = maskgenloss(targetmasks, masks, criterion)
+        runningloss += loss
+        if i == 40:
+            break
+    runningloss = runningloss/40
+    print("Cross entropy : {:.4f}".format(runningloss.data[0]))
+    pass
+
+
+def validateMaskgen(masknet, init=True):
+
+    masknet = masknet.cuda()
+    if init:
+        masknet.load_state_dict(torch.load(DATA + 'models/' + masknet.__class__.__name__ + '.torch'))
     heatmap = rpnheatmap().cuda()
     heatmap.load_state_dict(torch.load(DATA + 'models/rpn.torch'))
     criterion = nn.CrossEntropyLoss().cuda()
@@ -219,9 +247,10 @@ def drawRectP(bboxarray, img):
         pass
 
 
-def validateRPN():
+def validateRPN(init=True):
     net = rpn().cuda()
-    net.load_state_dict(torch.load(DATA + 'models/rpn.torch'))
+    if init:
+        net.load_state_dict(torch.load(DATA + 'models/rpn.torch'))
     dataset = rpnDataset(DATA + 'dataset/rpn-validation-set/')
     dataset_size = len(dataset)
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=True)
@@ -247,7 +276,7 @@ def validateRPN():
     pass
 
 
-def validateBackboneNet(net, data_transform=transforms.Compose([
+def validateBackboneNet(net, init=True, data_transform=transforms.Compose([
                         transforms.Resize((32, 32)),
                         transforms.Grayscale(),
                         transforms.ToTensor()])):
@@ -255,7 +284,8 @@ def validateBackboneNet(net, data_transform=transforms.Compose([
     net.cuda()
     _, dataloader = backboneDatasetLoader(batch_size=2000, data_transform=data_transform)
 
-    net.load_state_dict(torch.load(DATA+'models/'+net.__class__.__name__+'.torch'))
+    if init:
+        net.load_state_dict(torch.load(DATA+'models/'+net.__class__.__name__+'.torch'))
     criterion = nn.CrossEntropyLoss()
 
     dataiter = iter(dataloader)

@@ -5,6 +5,10 @@
 #               a=0.001, b=0.1, d=1,
 #               save_model=True)
 
+from testcode import validateMaskgen2
+from nnmod import maskgen2
+validateMaskgen2(maskgen2(), init=False)
+
 # from testcode import visualizeMaskgen2
 # visualizeMaskgen2()
 
@@ -36,7 +40,7 @@
 ''' Testing validateRPN '''
 
 # from testcode import validateRPN
-# validateRPN()
+# validateRPN(init=False)
 
 ''' Testing trainRPN '''
 
@@ -148,15 +152,15 @@
 
 ''' Testing backbone02 '''
 
-# from src.nnmod01 import backbone02
-# from src.nnmod01 import trainBackbone
-# from src.nnmod01 import validateBackboneNet
+# from nnmod import backbone02
+# from train import trainBackbone
+# from testcode import validateBackboneNet
 #
 # # trainBackbone(backbone02(), batch_size=100, epochs=4,
 # #               a=0.0001, b=0.1,
 # #               save_model=True)
 #
-# validateBackboneNet(backbone02())
+# validateBackboneNet(backbone02(), init=False)
 
 ''' Testing validateBackboneNet '''
 
@@ -205,19 +209,18 @@
 # pass
 
 # import matplotlib.pyplot as plt
-# from src.datamod01 import loadPickle
-# from src.constants import DATA
+# from datamod import loadPickle
+# from constants import DATA
 #
 # shapes = loadPickle(DATA+'pickle/analysis/originalCropsStats.p')
 #
 # fig = plt.figure()
-#
-# fig.add_subplot(1, 2, 1)
-# disp1 = shapes['rows'].plot.hist()
-#
-# fig.add_subplot(1, 2, 2)
-# disp2 = shapes['columns'].plot.hist()
-#
+# r = fig.add_subplot(1, 2, 1)
+# r.set_xlabel('Row size')
+# shapes['rows'].plot.hist()
+# c = fig.add_subplot(1, 2, 2)
+# c.set_xlabel('Column size')
+# shapes['columns'].plot.hist()
 # plt.show()
 
 ''' Testing createCropBatches '''
@@ -239,8 +242,20 @@
 
 ''' Testing analyzeImageAndMaks on main data sets '''
 
-# from src.datamod01 import analyzeImageAndMaks
-# shapes, sizes = analyzeImageAndMaks()
+# #from src.datamod01 import analyzeImageAndMaks
+# from datamod import loadPickle
+# from constants import DATA
+# import matplotlib.pyplot as plot
+# # shapes, sizes = analyzeImageAndMaks()
+# shapes, sizes = loadPickle(DATA+'pickle/analysis/OriginaImagAndMaskStats.p')
+# fig = plot.figure()
+# r = fig.add_subplot(1, 3, 1)
+# r.set_xlabel('Row size')
 # shapes['rows'].plot.hist()
+# c = fig.add_subplot(1, 3, 2)
+# c.set_xlabel('Column size')
 # shapes['columns'].plot.hist()
+# a = fig.add_subplot(1, 3, 3)
+# a.set_xlabel('Mask area')
 # sizes['area'].plot.hist()
+# plot.show()
