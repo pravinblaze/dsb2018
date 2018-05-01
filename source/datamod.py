@@ -32,22 +32,28 @@ class rpnDataset(torch.utils.data.Dataset):
         return data
 
 
-def prepareRPNdataset(dataset='train'):
+def prepareRPNdataset():
 
-    load = loadMainBatches(dataset)
-    loop_counter = 0
-    for data in load:
-        for imgid in data.keys():
+    datasetlist = ['train', 'valid']
+    if not os.path.exists(DATA + 'dataset/rpn/'):
+        os.makedirs(DATA + 'dataset/rpn/')
+    if not os.path.exists(DATA + 'dataset/rpn-valid/'):
+        os.makedirs(DATA + 'dataset/rpn-valid/')
+    for dataset in datasetlist:
+        print("Praring RPN Dataset: "+dataset)
+        load = loadMainBatches(dataset)
+        loop_counter = 0
+        for data in load:
             loop_counter += 1
-            img = data[imgid]['image']
-            img = img.astype(np.uint8)
-            imgray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-            shape = data[imgid]['shape']
-            bbox_array = np.zeros((0, 4), np.uint8)
-            mask_array = np.zeros((0, 32, 32), np.uint8)
-            crop_array = np.zeros((0, 32, 32), np.uint8)
+            for imgid in data.keys():
+                img = data[imgid]['image']
+                img = img.astype(np.uint8)
+                imgray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+                shape = data[imgid]['shape']
+                bbox_array = np.zeros((0, 4), np.uint8)
+                mask_array = np.zeros((0, 32, 32), np.uint8)
+                crop_array = np.zeros((0, 32, 32), np.uint8)
 
-            if dataset == 'train':
                 for mask in data[imgid]['masks']:
 
                     mask_uint8 = mask.astype(np.uint8)
@@ -74,18 +80,13 @@ def prepareRPNdataset(dataset='train'):
                     bbox = np.array([x1, y1, x2, y2])
                     bbox_array = np.append(bbox_array, np.expand_dims(bbox, axis=0), axis=0)
 
-            if dataset == 'train':
-                datadict = {"id": imgid, "image": img, "bbox": bbox_array, "masks": mask_array, "crops": crop_array}
-            else:
-                datadict = {"id": imgid, "image": img}
-            if loop_counter % 10 == 0:
-                print("pickling rpn data {:.3f} %".format(100*loop_counter/3000))
-            if dataset == 'train':
-                pickleData(DATA + 'dataset/rpn/' + str(imgid) + '.p', datadict)
-            if dataset == 'test':
-                pickleData(DATA + 'dataset/rpn-test/' + str(imgid) + '.p', datadict)
-            if dataset == 'final':
-                pickleData(DATA + 'dataset/final/' + str(imgid) + '.p', datadict)
+                    datadict = {"id": imgid, "image": img, "bbox": bbox_array, "masks": mask_array, "crops": crop_array}
+                if dataset == 'train':
+                    pickleData(DATA + 'dataset/rpn/' + str(imgid) + '.p', datadict)
+                if dataset == 'valid':
+                    pickleData(DATA + 'dataset/rpn-valid/' + str(imgid) + '.p', datadict)
+            print("pickling rpn data {:.3f} %".format(100*loop_counter/len(load)))
+        print("Done !")
 
     pass
 
@@ -107,9 +108,13 @@ def backboneDatasetLoader(batch_size=100,
 
 def encodeCIFAR2jpg():
     transform = transforms.Compose([transforms.ToTensor()])
-    trainset = torchvision.datasets.CIFAR10(DATA + 'data', train=True, transform=transform)
+    trainset = torchvision.datasets.CIFAR10(DATA + 'dataset/', train=True, transform=transform, download=False)
     trainloader = torch.utils.data.DataLoader(trainset, batch_size=1000, shuffle=True, num_workers=10)
-
+    if not os.path.exists(DATA + 'dataset/backbone/training/background/'):
+        os.makedirs(DATA + 'dataset/backbone/training/background/')
+    if not os.path.exists(DATA + 'dataset/backbone/validation/background/'):
+        os.makedirs(DATA + 'dataset/backbone/validation/background/')
+    print('Encoding CIFAR10 images as negative examples for backbone network')
     loop_counter = 0
     for data in trainloader:
         images, targets = data
@@ -117,7 +122,12 @@ def encodeCIFAR2jpg():
             loop_counter += 1
             img = np.dstack((img[0], img[1], img[2]))
             img = 255 * img
-            cv2.imwrite(DATA + 'dataset/backbone/background/' + str(loop_counter) + '.jpg', img.astype(np.uint8))
+            if loop_counter > 2800:
+                cv2.imwrite(DATA + 'dataset/backbone/training/background/'
+                            + str(loop_counter) + '.jpg', img.astype(np.uint8))
+            else:
+                cv2.imwrite(DATA + 'dataset/backbone/validation/background/'
+                            + str(loop_counter) + '.jpg', img.astype(np.uint8))
 
         if loop_counter > 28000:
             break
@@ -129,15 +139,44 @@ def encodeCIFAR2jpg():
 def encodeCrop2jpg():
 
     load = loadCropBatches()
-
     loop_counter = 0
+    if not os.path.exists(DATA+'dataset/backbone/training/nucleus/'):
+        os.makedirs(DATA+'dataset/backbone/training/nucleus/')
+    if not os.path.exists(DATA + 'dataset/backbone/validation/nucleus/'):
+        os.makedirs(DATA + 'dataset/backbone/validation/nucleus/')
+    print("Encoding nuclei crop images as positive example for backbone network")
+    i = 0
     for data in load:
         print("Encoding crops ... {} % ...".format((loop_counter * 100) // 29461))
+        i += 1
         for crop in data:
             loop_counter += 1
-            cv2.imwrite(DATA+'dataset/backbone/nucleus/'+str(loop_counter)+'.jpg', crop.astype(np.uint8))
-
+            if i > 1:
+                cv2.imwrite(DATA+'dataset/backbone/training/nucleus/'
+                            + str(loop_counter)+'.jpg', crop.astype(np.uint8))
+            else:
+                cv2.imwrite(DATA + 'dataset/backbone/validation/nucleus/'
+                            + str(loop_counter) + '.jpg', crop.astype(np.uint8))
     pass
+
+
+class loadCropBatches:
+
+    def __init__(self):
+        self.data_pickle_dir = DATA + 'pickle/crops/'
+        self.batch_no = 0
+        pass
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        self.batch_no += 1
+        data_path = self.data_pickle_dir + 'crop' + str(self.batch_no) + ".p"
+        if os.path.isfile(data_path):
+            return loadPickle(data_path)
+        else:
+            raise StopIteration
 
 
 def createCropBatches():
@@ -147,6 +186,9 @@ def createCropBatches():
     loop_counter = 0
     crop_list = []
     batch_size = 1000
+
+    if not os.path.exists(DATA + 'pickle/crops/'):
+        os.makedirs(DATA + 'pickle/crops/')
 
     for data in load:
         for imgid in data.keys():
@@ -176,27 +218,33 @@ def createCropBatches():
                 loop_counter += 1
                 if loop_counter % batch_size == 0:
                     print("Pickling ... {}% ...".format((loop_counter*100)//29461))
-                    pickleData(DATA+'pickle/training_crops/crop'+str(loop_counter//batch_size)+'.p', crop_list)
+                    pickleData(DATA+'pickle/crops/crop'+str(loop_counter//batch_size)+'.p', crop_list)
                     crop_list = []
     if len(crop_list) > 0:
-        pickleData(DATA + 'pickle/training_crops/crop' + str(loop_counter // batch_size) + '.p', crop_list)
+        pickleData(DATA + 'pickle/crops/crop' + str(loop_counter // batch_size) + '.p', crop_list)
+    print("Done !")
 
     pass
 
 
-class loadCropBatches():
+class loadMainBatches:
 
-    def __init__(self):
-        self.data_pickle_dir = DATA + 'pickle/training_crops/crop'
+    def __init__(self, data_set='train'):
+        self.data_pickle_paths = {'train': 'pickle/train/', 'valid': 'pickle/valid/'}
+        self.data_pickle_dir = DATA + self.data_pickle_paths[data_set]
         self.batch_no = 0
+        self.len = len(os.listdir(self.data_pickle_dir))
         pass
 
     def __iter__(self):
         return self
 
+    def __len__(self):
+        return self.len
+
     def __next__(self):
         self.batch_no += 1
-        data_path = self.data_pickle_dir + str(self.batch_no) + ".p"
+        data_path = self.data_pickle_dir + "dataMain" + str(self.batch_no) + ".p"
         if os.path.isfile(data_path):
             return loadPickle(data_path)
         else:
@@ -208,82 +256,53 @@ def createMainDataBatches(data_set='train'):
         {id :{'image':numpyArray, 'shape':tupple, 'masks':numpyArray}, ...}
     '''
 
-    data_set_paths = {'train': 'stage1_train/', 'test': 'stage1_test/', 'final': 'stage2_test/'}
-    data_dir = DATA + data_set_paths[data_set]
-    data_pickle_paths = {'train': 'pickle/main_train/', 'test': 'pickle/main_test/',
-                         'final': 'pickle/final/'}
+    print("Creating data batches for dataset: "+data_set)
+    data_set_path = 'stage1_train/'
+    data_dir = DATA + data_set_path
+    data_pickle_paths = {'train': 'pickle/train/', 'valid': 'pickle/valid/'}
     data_pickle_dir = DATA + data_pickle_paths[data_set]
+    if not os.path.exists(data_pickle_dir):
+        os.makedirs(data_pickle_dir)
     img_id_list = os.listdir(data_dir)
     batch_size = 10
     image_list_size = len(img_id_list)
-
-    # img_id_list = img_id_list[:5]
-
+    if data_set == 'train':
+        img_id_list = img_id_list[image_list_size//10:]
+    elif data_set == 'valid':
+        img_id_list = img_id_list[:image_list_size//10]
+    image_list_size = len(img_id_list)
     data = dict()
-    loop_counter = 0
-
-    for img_id in img_id_list:
+    for i, img_id in enumerate(img_id_list):
 
         # reading image data
         path = data_dir + img_id + '/images/' + img_id + '.png'
         img = cv2.imread(path)
         img_shape = np.shape(img)
-        print("pickling image {} of {} ".format(loop_counter, image_list_size))
-        print("image shape : ", img_shape)
-
         mask_array = np.zeros((0,)+img_shape[:-1], np.float32)
-
         data[img_id] = {'image': img, 'shape': img_shape}
 
         # reading training masks
-        if data_set == 'train':
+        mask_dir = data_dir + img_id + '/masks/'
+        mask_id_list = os.listdir(mask_dir)
 
-            mask_dir = data_dir + img_id + '/masks/'
-            mask_id_list = os.listdir(mask_dir)
-            mask_list_size = len(mask_id_list)
-            print("number of masks : ", mask_list_size)
+        for mask_id in mask_id_list:
 
-            for mask_id in mask_id_list:
+            path = data_dir + img_id + '/masks/' + mask_id
+            mask = cv2.imread(path)
+            mask = cv2.cvtColor(mask, cv2.COLOR_BGR2GRAY)
+            mask_array = np.append(mask_array, np.expand_dims(mask, axis=0), axis=0)
 
-                path = data_dir + img_id + '/masks/' + mask_id
-                mask = cv2.imread(path)
-                mask = cv2.cvtColor(mask, cv2.COLOR_BGR2GRAY)
-                mask_array = np.append(mask_array, np.expand_dims(mask, axis=0), axis=0)
+        data[img_id]['masks'] = mask_array
 
-            data[img_id]['masks'] = mask_array
-
-            pass
-
-        loop_counter += 1
-        if loop_counter % batch_size == 0:
-
-            pickleData(data_pickle_dir+'dataMain'+str(loop_counter//batch_size)+'.p', data)
+        if i % batch_size == 0:
+            print("Pickeling data batches ... {} of {}".format(i//batch_size, image_list_size//batch_size))
+            pickleData(data_pickle_dir+'dataMain'+str(i//batch_size)+'.p', data)
             data = dict()
 
             pass
     if len(list(data.keys())) > 0:
-        pickleData(data_pickle_dir + 'dataMain' + str(loop_counter // batch_size) + '.p', data)
-
-
-class loadMainBatches():
-
-    def __init__(self, data_set='train'):
-        self.data_pickle_paths = {'train': 'pickle/main_train/', 'test': 'pickle/main_test/',
-                                  'final': 'pickle/final/'}
-        self.data_pickle_dir = DATA + self.data_pickle_paths[data_set]
-        self.batch_no = 0
-        pass
-
-    def __iter__(self):
-        return self
-
-    def __next__(self):
-        self.batch_no += 1
-        data_path = self.data_pickle_dir + "dataMain" + str(self.batch_no) + ".p"
-        if os.path.isfile(data_path):
-            return loadPickle(data_path)
-        else:
-            raise StopIteration
+        pickleData(data_pickle_dir + 'dataMain' + str(i//batch_size) + '.p', data)
+    print("Done !")
 
 
 def loadDataN1(data_set='train'):

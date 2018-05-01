@@ -32,7 +32,7 @@ def visualizeMaskgen2():
     masknet.load_state_dict(torch.load(DATA + 'models/' + masknet.__class__.__name__ + '.torch'))
     threshold = nn.Sigmoid().cuda()
 
-    dataset = rpnDataset(DATA + 'dataset/rpn-validation-set/')
+    dataset = rpnDataset(DATA + 'dataset/rpn-valid/')
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=True)
 
     for i, data in enumerate(dataloader, 0):
@@ -57,11 +57,14 @@ def visualizeMaskgen2():
 
         fig = plot.figure()
         fig.add_subplot(1, 3, 1)
-        disp1 = plot.imshow(crop)
+        plot.axis('off')
+        plot.imshow(crop)
         fig.add_subplot(1, 3, 2)
-        disp2 = plot.imshow(target)
+        plot.axis('off')
+        plot.imshow(target)
         fig.add_subplot(1, 3, 3)
-        disp3 = plot.imshow(mask)
+        plot.axis('off')
+        plot.imshow(mask)
         plot.show()
 
     pass
@@ -74,7 +77,7 @@ def visualizeMaskgen():
     heatmap = rpnheatmap().cuda()
     heatmap.load_state_dict(torch.load(DATA + 'models/rpn.torch'))
 
-    dataset = rpnDataset(DATA + 'dataset/rpn-validation-set/')
+    dataset = rpnDataset(DATA + 'dataset/rpn-valid/')
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=True)
 
     for i, data in enumerate(dataloader, 0):
@@ -112,7 +115,7 @@ def validateMaskgen2(masknet, init=True):
         masknet.load_state_dict(torch.load(DATA + 'models/' + masknet.__class__.__name__ + '.torch'))
     criterion = nn.CrossEntropyLoss().cuda()
 
-    dataset = rpnDataset(DATA + 'dataset/rpn-validation-set/')
+    dataset = rpnDataset(DATA + 'dataset/rpn-valid/')
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=True)
     runningloss = 0
     for i, data in enumerate(dataloader, 0):
@@ -141,7 +144,7 @@ def validateMaskgen(masknet, init=True):
     heatmap.load_state_dict(torch.load(DATA + 'models/rpn.torch'))
     criterion = nn.CrossEntropyLoss().cuda()
 
-    dataset = rpnDataset(DATA + 'dataset/rpn-validation-set/')
+    dataset = rpnDataset(DATA + 'dataset/rpn-valid/')
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=True)
     runningloss = 0
     for i, data in enumerate(dataloader, 0):
@@ -168,7 +171,7 @@ def visualizeRPN(donms=True, o=0.3, topk=200):
     # net.load_state_dict(torch.load(DATA + 'models/rpn_tp5tn1.torch'))
     # net.load_state_dict(torch.load(DATA + 'models/rpn_tp7tn3.torch'))
 
-    dataset = rpnDataset(DATA + 'dataset/rpn-validation-set/')
+    dataset = rpnDataset(DATA + 'dataset/rpn-valid/')
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=True)
 
     for data in dataloader:
@@ -254,7 +257,7 @@ def validateRPN(init=True):
     net = rpn().cuda()
     if init:
         net.load_state_dict(torch.load(DATA + 'models/rpn.torch'))
-    dataset = rpnDataset(DATA + 'dataset/rpn-validation-set/')
+    dataset = rpnDataset(DATA + 'dataset/rpn-valid/')
     dataset_size = len(dataset)
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=True)
     criterioncls = torch.nn.CrossEntropyLoss().cuda()

@@ -18,6 +18,7 @@ from nnmod import rpnheatmap
 from loss import maskgenloss
 from nnmod import maskgen
 from nnmod import maskgen2
+import os
 
 
 def trainmaskgen2(epochs=4, a=0.001, b=0.1, d=8, save_model=True):
@@ -53,6 +54,8 @@ def trainmaskgen2(epochs=4, a=0.001, b=0.1, d=8, save_model=True):
     print('Training finished successfully !')
     if save_model:
         print('Saving model to disk ... ')
+        if not os.path.exists(DATA + 'models/'):
+            os.makedirs(DATA + 'models/')
         torch.save(masknet.state_dict(), DATA + 'models/' + masknet.__class__.__name__ + '.torch')
         print('Model saved to disk !')
 
@@ -98,6 +101,8 @@ def trainMaskgen(epochs=4, a=0.001, b=0.1, d=8, save_model=True):
     print('Training finished successfully !')
     if save_model:
         print('Saving model to disk ... ')
+        if not os.path.exists(DATA+'models/'):
+            os.makedirs(DATA+'models/')
         torch.save(masknet.state_dict(), DATA+'models/'+masknet.__class__.__name__+'.torch')
         print('Model saved to disk !')
 
@@ -152,6 +157,8 @@ def trainNucleusDetect(epochs=2, batch_size=100, a=0.001, b=0.1, save_model=True
     print('Training finished successfully !')
     if save_model:
         print('Saving model to disk ... ')
+        if not os.path.exists(DATA+'models/'):
+            os.makedirs(DATA+'models/')
         torch.save(classifier.state_dict(), DATA+'models/'+classifier.__class__.__name__+'.torch')
         print('Model saved to disk !')
 
@@ -201,6 +208,8 @@ def trainRPN(epochs=4, a=0.001, b=0.1, train_backbone=False, init_backbone=False
     print('Finished training in {:4.2f} s i.e, {:3.2f} min'.format(end_time-start_time, (end_time-start_time)/60))
     if save_model:
         print('Saving model to disk ... ')
+        if not os.path.exists(DATA+'models/'):
+            os.makedirs(DATA+'models/')
         torch.save(net.state_dict(), DATA+'models/'+net.__class__.__name__+'.torch')
         print('Model saved to disk !')
     pass
@@ -258,6 +267,8 @@ def trainBackbone(net, batch_size=100,
     print('Training finished successfully !')
     if save_model:
         print('Saving model to disk ... ')
+        if not os.path.exists(DATA+'models/'):
+            os.makedirs(DATA+'models/')
         torch.save(net.state_dict(), DATA+'models/'+net.__class__.__name__+'.torch')
         print('Model saved to disk !')
 

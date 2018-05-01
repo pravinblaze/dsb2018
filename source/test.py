@@ -1,3 +1,8 @@
+''' Testing solution '''
+
+from solution import solve
+solve()
+
 ''' Testing maskgen2 '''
 
 # from train import trainmaskgen2
@@ -9,8 +14,8 @@
 # from nnmod import maskgen2
 # validateMaskgen2(maskgen2(), init=True)
 
-from testcode import visualizeMaskgen2
-visualizeMaskgen2()
+# from testcode import visualizeMaskgen2
+# visualizeMaskgen2()
 
 ''' Testing maskgen '''
 
@@ -52,8 +57,6 @@ visualizeMaskgen2()
 #          init_rpn=False,
 #          save_model=True)
 
-# Set tpos, tneg for generate.clsTargets
-
 ''' Testing generateAnchors '''
 
 # from generate_targets import generateAnchros
@@ -62,9 +65,9 @@ visualizeMaskgen2()
 
 ''' Testing generateTargets '''
 
-# from src.generate_targets import generateTargets
-# from src.datamod01 import rpnDataset
-# from src.constants import DATA
+# from generate import generateTargets
+# from datamod import rpnDataset
+# from constants import DATA
 # import torch
 #
 # dataset = rpnDataset(DATA+'dataset/rpn/')
@@ -76,7 +79,7 @@ visualizeMaskgen2()
 
 ''' Testing jaccard i.e, iou function '''
 # import torch
-# from src.generate_targets import jaccard
+# from generate import jaccard
 # box_a = torch.FloatTensor([[0, 0, 2, 2], [0, 0, 1, 1]])
 # box_b = torch.FloatTensor([[1, 0, 3, 2], [0, 0, 1, 1]])
 # iou = jaccard(box_a, box_b)
@@ -87,10 +90,10 @@ visualizeMaskgen2()
 
 # import torch
 # from constants import DATA
-# from datamod01 import rpnDataset
+# from datamod import rpnDataset
 # import numpy as np
 # import matplotlib.pyplot as plot
-# from rpn import drawRectP
+# from testcode import drawRectP
 #
 # dataset = rpnDataset(DATA+'dataset/rpn/')
 #
@@ -129,10 +132,10 @@ visualizeMaskgen2()
 
 ''' Testing backboneFeatures '''
 
-# from src.datamod01 import backboneDatasetLoader
-# from src.nnmod01 import backboneFeature
+# from datamod import backboneDatasetLoader
+# from nnmod import backboneFeature
 # import torch
-# from src.constants import DATA
+# from constants import DATA
 # from torch.autograd import Variable
 #
 # loader, _ = backboneDatasetLoader()
@@ -181,7 +184,7 @@ visualizeMaskgen2()
 
 ''' Testing backboneDatasetLoader '''
 
-# from src.datamod01 import backboneDatasetLoader
+# from datamod import backboneDatasetLoader
 #
 # loader, _ = backboneDatasetLoader()
 # for data in loader:
@@ -193,21 +196,21 @@ visualizeMaskgen2()
 
 ''' Testing encodeCIFAR2jpg '''
 
-# from src.datamod01 import encodeCIFAR2jpg
+# from datamod import encodeCIFAR2jpg
 # encodeCIFAR2jpg()
 
 ''' Testing encodeCrop2jpg '''
 
-# from src.datamod01 import encodeCrop2jpg
+# from datamod import encodeCrop2jpg
 # encodeCrop2jpg()
 
 ''' Testing analyzeOriginalCrops '''
 
-# from src.datamod01 import  analyzeOriginalCrops
+# from datamod import  analyzeOriginalCrops
 # shapes = analyzeOriginalCrops()
 #
 # pass
-
+#
 # import matplotlib.pyplot as plt
 # from datamod import loadPickle
 # from constants import DATA
@@ -225,7 +228,7 @@ visualizeMaskgen2()
 
 ''' Testing createCropBatches '''
 
-# from src.datamod01 import createCropBatches
+# from datamod import createCropBatches
 #
 # createCropBatches()
 
@@ -234,7 +237,7 @@ visualizeMaskgen2()
 # from datamod import createMainDataBatches
 # from datamod import loadPickle
 # from constants import DATA
-# createMainDataBatches('final')
+# createMainDataBatches('valid')
 # print("Created mini data batches successfully")
 
 # data = loadPickle(DATA+'pickle/main_test/dataMain1.p')
@@ -242,11 +245,11 @@ visualizeMaskgen2()
 
 ''' Testing analyzeImageAndMaks on main data sets '''
 
-# #from src.datamod01 import analyzeImageAndMaks
+# from datamod import analyzeImageAndMaks
 # from datamod import loadPickle
 # from constants import DATA
 # import matplotlib.pyplot as plot
-# # shapes, sizes = analyzeImageAndMaks()
+# shapes, sizes = analyzeImageAndMaks()
 # shapes, sizes = loadPickle(DATA+'pickle/analysis/OriginaImagAndMaskStats.p')
 # fig = plot.figure()
 # r = fig.add_subplot(1, 3, 1)
