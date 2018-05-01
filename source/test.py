@@ -1,7 +1,7 @@
 ''' Testing solution '''
 
-from solution import solve
-solve()
+# from solution import solve
+# solve()
 
 ''' Testing maskgen2 '''
 
