@@ -259,28 +259,20 @@ class backbone01(nn.Module):
         self.conv3 = nn.Conv2d(8, 8, 3, padding=1)
         self.conv4 = nn.Conv2d(8, 8, 3, padding=1)
         self.conv5 = nn.Conv2d(8, 8, 3, padding=1)
-        self.conv6 = nn.Conv2d(8, 8, 3, padding=1)
         self.pool = nn.MaxPool2d(2, 2)
-        self.fc = nn.Linear(8*8*8, 2)
-        self.bn = nn.BatchNorm2d(8)
+        self.fc = nn.Linear(8*16*16, 2)
 
     def forward(self, x):
-        out1 = F.relu(self.bn(self.conv1(x)))  # out - 8*32*32
+        out1 = F.relu(self.conv1(x))  # out - 8*32*32
 
-        out2 = F.relu(self.bn(self.conv2(out1)))
-        out3 = self.conv3(out2)
-        out3 = F.relu(self.bn(out3 + out1))  # out - 8*32*32
-
-        out4 = F.relu(self.bn(self.conv4(out3)))
-        out5 = self.conv5(out4)
-        out5 = F.relu(self.bn(out3 + out5))
+        out2 = F.relu(self.conv2(out1))
+        out3 = F.relu(self.conv3(out2))  # out - 8*32*32
+        out4 = F.relu(self.conv4(out3))
+        out5 = F.relu(self.conv5(out4))
         out5 = self.pool(out5)  # out - 8*16*16
+        out5 = out5.view(-1, 8*16*16)
 
-        out6 = F.relu(self.bn(self.conv6(out5)))
-        out6 = self.pool(out6)  # out - 8*8*8
-        out6 = out6.view(-1, 8*8*8)
-
-        out = F.relu(self.fc(out6))
+        out = F.relu(self.fc(out5))
 
         return out
 

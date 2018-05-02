@@ -10,9 +10,9 @@
 #               a=0.001, b=0.1, d=1,
 #               save_model=True)
 
-# from testcode import validateMaskgen2
-# from nnmod import maskgen2
-# validateMaskgen2(maskgen2(), init=True)
+from testcode import validateMaskgen2
+from nnmod import maskgen2
+validateMaskgen2(maskgen2(), init=True, perturb=True)
 
 # from testcode import visualizeMaskgen2
 # visualizeMaskgen2()
@@ -20,7 +20,8 @@
 ''' Testing maskgen '''
 
 # from testcode import validateMaskgen
-# validateMaskgen()
+# from nnmod import maskgen
+# validateMaskgen(maskgen(), init=True)
 
 # from testcode import visualizeMaskgen
 # visualizeMaskgen()
@@ -40,16 +41,16 @@
 ''' Testing visualizerpn '''
 
 # from testcode import visualizeRPN
-# visualizeRPN(donms=True, o=0.15, topk=200)
+# visualizeRPN(donms=True, o=0.05, topk=200, perturb=True)
 
 ''' Testing validateRPN '''
 
 # from testcode import validateRPN
-# validateRPN(init=True)
+# validateRPN(init=True, perturb=True)
 
 ''' Testing trainRPN '''
 
-# from train import trainRPN
+from train import trainRPN
 #
 # trainRPN(epochs=4, a=0.001, b=0.1,
 #          train_backbone=True,
@@ -159,11 +160,11 @@
 # from train import trainBackbone
 # from testcode import validateBackboneNet
 #
-# # trainBackbone(backbone02(), batch_size=100, epochs=4,
+# # trainBackbone(backbone02(), batch_size=100, epochs=3,
 # #               a=0.0001, b=0.1,
 # #               save_model=True)
-#
-# validateBackboneNet(backbone02(), init=True)
+# #
+# validateBackboneNet(backbone02(), init=True, perturb=False)
 
 ''' Testing validateBackboneNet '''
 
@@ -178,7 +179,7 @@
 # from nnmod import backbone01
 #
 # trainBackbone(backbone01(), batch_size=100, epochs=4,
-#                 a=0.0001, b=0.1,
+#                 a=0.001, b=0.1,
 #                 save_model=True)
 
 

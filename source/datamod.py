@@ -14,11 +14,12 @@ import torch
 
 class rpnDataset(torch.utils.data.Dataset):
 
-    def __init__(self, path, transform=None):
+    def __init__(self, path, transform=None, perturb=False):
         super().__init__()
         self.filelist = os.listdir(path)
         self.path = path
         self.transform = transform
+        self.perturb = perturb
         pass
 
     def __len__(self):
@@ -27,6 +28,11 @@ class rpnDataset(torch.utils.data.Dataset):
     def __getitem__(self, index):
         data = loadPickle(self.path + self.filelist[index])
         data['image'] = np.expand_dims(cv2.cvtColor(data['image'], cv2.COLOR_BGR2GRAY), axis=0)
+        if self.perturb:
+            rnd = np.random.randint(0, 25, data['image'].shape)
+            data['image'] = data['image'].astype(np.int) + rnd
+            data['image'][data['image']>255] = 255
+            data['image'] = data['image'].astype(np.uint8)
         if self.transform:
             data = self.transform(data)
         return data

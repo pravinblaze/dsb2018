@@ -201,7 +201,7 @@ def trainRPN(epochs=4, a=0.001, b=0.1, train_backbone=False, init_backbone=False
                     totalloss.backward()
                     optimizer.step()
 
-            print('Epoch {} progress {:3.3f} %, clsloss {:1.5f}, bboxloss {:1.5f}'.format(epoch,
+            print('Epoch {} progress {:3.3f} %, clsloss {:1.5f}, bboxloss {:1.5f}'.format(epoch+1,
                                                                      100*loop_counter/dataset_size,
                                                                      clsloss.data[0], blambda*bboxloss.data[0]))
     end_time = time.time()

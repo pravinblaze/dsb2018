@@ -108,7 +108,7 @@ def visualizeMaskgen():
     pass
 
 
-def validateMaskgen2(masknet, init=True):
+def validateMaskgen2(masknet, init=True, perturb=False):
 
     masknet.cuda()
     if init:
@@ -125,6 +125,10 @@ def validateMaskgen2(masknet, init=True):
         targetmasks, crops = targetmasks / 255, crops / 255
         targetmasks = targetmasks[0].view(-1, 1, 32, 32)
         crops = crops[0].view(-1, 1, 32, 32)
+        if perturb:
+            rnd = torch.rand(crops.size()).type(torch.cuda.FloatTensor)
+            rnd = rnd * 0.1
+            crops = crops + Variable(rnd)
         masks = masknet(crops)
         loss = maskgenloss(targetmasks, masks, criterion)
         runningloss += loss
@@ -165,13 +169,13 @@ def validateMaskgen(masknet, init=True):
     pass
 
 
-def visualizeRPN(donms=True, o=0.3, topk=200):
+def visualizeRPN(donms=True, o=0.3, topk=200, perturb=False):
     net = rpn().cuda()
     net.load_state_dict(torch.load(DATA + 'models/rpn.torch'))
     # net.load_state_dict(torch.load(DATA + 'models/rpn_tp5tn1.torch'))
     # net.load_state_dict(torch.load(DATA + 'models/rpn_tp7tn3.torch'))
 
-    dataset = rpnDataset(DATA + 'dataset/rpn-valid/')
+    dataset = rpnDataset(DATA + 'dataset/rpn-valid/', perturb=perturb)
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=True)
 
     for data in dataloader:
@@ -253,11 +257,11 @@ def drawRectP(bboxarray, img):
         pass
 
 
-def validateRPN(init=True):
+def validateRPN(init=True, perturb=False):
     net = rpn().cuda()
     if init:
         net.load_state_dict(torch.load(DATA + 'models/rpn.torch'))
-    dataset = rpnDataset(DATA + 'dataset/rpn-valid/')
+    dataset = rpnDataset(DATA + 'dataset/rpn-valid/', perturb=perturb)
     dataset_size = len(dataset)
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=True)
     criterioncls = torch.nn.CrossEntropyLoss().cuda()
@@ -285,9 +289,15 @@ def validateRPN(init=True):
 def validateBackboneNet(net, init=True, data_transform=transforms.Compose([
                         transforms.Resize((32, 32)),
                         transforms.Grayscale(),
-                        transforms.ToTensor()])):
+                        transforms.ToTensor()]), perturb=False):
 
     net.cuda()
+    if perturb:
+        data_transform = transforms.Compose([
+            transforms.Resize((32, 32)),
+            transforms.Grayscale(),
+            transforms.ToTensor(),
+            pertrubBackbone()])
     _, dataloader = backboneDatasetLoader(batch_size=2000, data_transform=data_transform)
 
     if init:
@@ -306,6 +316,14 @@ def validateBackboneNet(net, init=True, data_transform=transforms.Compose([
 
     print('Loss over validation set : %.5f' % (loss,))
 
+    pass
+
+
+class pertrubBackbone:
+    def __call__(self, x):
+        rnd = torch.rand(x.size())
+        rnd = rnd*0.1
+        return x + rnd
     pass
 
 
